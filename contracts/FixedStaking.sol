@@ -11,10 +11,6 @@ contract FixedStaking is Ownable {
     using SafeMath for uint256;
     using SafeERC20 for IERC20;
 
-    struct User {
-        StakeInfo[] stakes;
-    }
-
     struct StakeInfo {
         bool active;
         uint256 stakedAmount;
@@ -28,7 +24,7 @@ contract FixedStaking is Ownable {
 
     IERC20 public token;
 
-    mapping(address => User) internal users;
+    mapping(address => StakeInfo[]) internal users;
 
     uint256 public totalStaked;
 
