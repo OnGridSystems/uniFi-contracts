@@ -96,10 +96,10 @@ contract FixedStaking is Ownable {
             StakeInfo({
                 active: true,
                 stakedAmount: _amount,
-                startTime: block.timestamp,
-                endTime: block.timestamp.add(stakeDuration),
+                startTime: _now(),
+                endTime: _now().add(stakeDuration),
                 claimed: 0,
-                lastClaimTime: block.timestamp
+                lastClaimTime: _now()
             })
         );
         emit Stake(msg.sender, 0, _amount, 0, 0);
@@ -114,5 +114,10 @@ contract FixedStaking is Ownable {
     // Withdraw without caring about rewards. EMERGENCY ONLY.
     function emergencyWithdraw(uint256 _stakeId) public {
         emit EmergencyWithdraw(msg.sender, _stakeId, 0);
+    }
+
+    // Returns block.timestamp, overridable for test purposes.
+    function _now() internal view virtual returns (uint256) {
+        return block.timestamp;
     }
 }
