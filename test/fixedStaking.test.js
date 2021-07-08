@@ -40,17 +40,17 @@ describe("FixedStaking", function () {
 
       it("her stake is visible", async function () {
         expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
-        expect((await this.pool.stakes(this.alice.address, 0)).active).to.equal(true)
-        expect((await this.pool.stakes(this.alice.address, 0)).stakedAmount).to.equal("123")
-        expect((await this.pool.stakes(this.alice.address, 0)).claimed).to.equal("0")
+        expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
+        expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("123")
+        expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
       })
 
       it("second stake of Alice", async function () {
         await this.pool.stake(667)
         expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
-        expect((await this.pool.stakes(this.alice.address, 1)).active).to.equal(true)
-        expect((await this.pool.stakes(this.alice.address, 1)).stakedAmount).to.equal("667")
-        expect((await this.pool.stakes(this.alice.address, 1)).claimed).to.equal("0")
+        expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(true)
+        expect((await this.pool.getStake(this.alice.address, 1)).stakedAmount).to.equal("667")
+        expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
       })
 
       describe("15 days (half) passed", function () {
@@ -60,9 +60,9 @@ describe("FixedStaking", function () {
 
         it("tests will be here", async function () {
           expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
-          expect((await this.pool.stakes(this.alice.address, 0)).active).to.equal(true)
-          expect((await this.pool.stakes(this.alice.address, 0)).stakedAmount).to.equal("123")
-          expect((await this.pool.stakes(this.alice.address, 0)).claimed).to.equal("0")
+          expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
+          expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("123")
+          expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
         })
 
         describe("+ 15 days (entire interval) passed", function () {
@@ -72,9 +72,9 @@ describe("FixedStaking", function () {
 
           it("tests will be here", async function () {
             expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
-            expect((await this.pool.stakes(this.alice.address, 0)).active).to.equal(true)
-            expect((await this.pool.stakes(this.alice.address, 0)).stakedAmount).to.equal("123")
-            expect((await this.pool.stakes(this.alice.address, 0)).claimed).to.equal("0")
+            expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
+            expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("123")
+            expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
           })
 
           describe("+ 1 day passed (all expired))", function () {
@@ -84,9 +84,9 @@ describe("FixedStaking", function () {
 
             it("tests will be here", async function () {
               expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
-              expect((await this.pool.stakes(this.alice.address, 0)).active).to.equal(true)
-              expect((await this.pool.stakes(this.alice.address, 0)).stakedAmount).to.equal("123")
-              expect((await this.pool.stakes(this.alice.address, 0)).claimed).to.equal("0")
+              expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
+              expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("123")
+              expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
             })
           })
         })
@@ -99,9 +99,9 @@ describe("FixedStaking", function () {
 
         it("his stake is also visible", async function () {
           expect(await this.pool.getStakesLength(this.bob.address)).to.equal("1")
-          expect((await this.pool.stakes(this.bob.address, 0)).active).to.equal(true)
-          expect((await this.pool.stakes(this.bob.address, 0)).stakedAmount).to.equal("345")
-          expect((await this.pool.stakes(this.bob.address, 0)).claimed).to.equal("0")
+          expect((await this.pool.getStake(this.bob.address, 0)).active).to.equal(true)
+          expect((await this.pool.getStake(this.bob.address, 0)).stakedAmount).to.equal("345")
+          expect((await this.pool.getStake(this.bob.address, 0)).harvestedYield).to.equal("0")
         })
       })
     })
