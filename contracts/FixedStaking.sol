@@ -20,7 +20,7 @@ contract FixedStaking is Ownable {
         uint256 lastClaimTime;
     }
 
-    bool public active;
+    bool public stakesOpen;
 
     IERC20 public token;
 
@@ -63,11 +63,11 @@ contract FixedStaking is Ownable {
     }
 
     function start() public onlyOwner {
-        active = true;
+        stakesOpen = true;
     }
 
     function stop() public onlyOwner {
-        active = false;
+        stakesOpen = false;
     }
 
     // Deposit user's stake
