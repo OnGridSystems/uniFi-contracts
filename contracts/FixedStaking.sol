@@ -48,8 +48,6 @@ contract FixedStaking is Ownable {
 
     event Unstake(address indexed user, uint256 indexed stakeId, uint256 amount, uint256 startTime, uint256 endTime, bool early);
 
-    event EmergencyWithdraw(address indexed user, uint256 indexed stakeId, uint256 amount);
-
     event Harvest(address indexed user, uint256 indexed stakeId, uint256 amount, uint256 harvestTime);
 
     constructor(
@@ -157,11 +155,6 @@ contract FixedStaking is Ownable {
         stakes[msg.sender][_stakeId].harvestedYield = harvestedYield.add(harvestableYield);
         stakes[msg.sender][_stakeId].lastHarvestTime = _now();
         emit Harvest(msg.sender, _stakeId, harvestableYield, _now());
-    }
-
-    // Withdraw without caring about rewards. EMERGENCY ONLY.
-    function emergencyWithdraw(uint256 _stakeId) public {
-        emit EmergencyWithdraw(msg.sender, _stakeId, 0);
     }
 
     function withdrawalPenalties(address _to, uint256 amount) public onlyOwner {
