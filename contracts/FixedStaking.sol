@@ -107,7 +107,7 @@ contract FixedStaking is Ownable {
     // Deposit user's stake
     function stake(uint256 _amount) public {
         require(stakesOpen, "stake: not open");
-        token.transferFrom(msg.sender, address(this), _amount);
+        token.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 startTime = _now();
         uint256 endTime = _now().add(stakeDurationDays.mul(1 days));
         stakes[msg.sender].push(
@@ -134,14 +134,14 @@ contract FixedStaking is Ownable {
         bool early;
         require(active, "Stake is not active!");
         if (_now() > endTime) {
-            token.transfer(msg.sender, stakedAmount);
+            token.safeTransfer(msg.sender, stakedAmount);
             stakes[msg.sender][_stakeId].active = false;
             totalStaked = totalStaked.sub(stakedAmount);
             early = false;
         } else {
             uint256 fee = stakedAmount.mul(earlyUnstakeFee).div(10000);
             uint256 amountToTransfer = stakedAmount.sub(fee);
-            token.transfer(msg.sender, amountToTransfer);
+            token.safeTransfer(msg.sender, amountToTransfer);
             stakes[msg.sender][_stakeId].active = false;
             stakes[msg.sender][_stakeId].endTime = _now();
             stakes[msg.sender][_stakeId].totalYield = harvestedYield.add(harvestableYield);
@@ -156,7 +156,7 @@ contract FixedStaking is Ownable {
     function harvest(uint256 _stakeId) public {
         (, , , , , uint256 harvestedYield, , uint256 harvestableYield) = getStake(msg.sender, _stakeId);
         require(harvestableYield != 0, "harvestableYield is zero");
-        token.transfer(msg.sender, harvestableYield);
+        token.safeTransfer(msg.sender, harvestableYield);
         stakes[msg.sender][_stakeId].harvestedYield = harvestedYield.add(harvestableYield);
         stakes[msg.sender][_stakeId].lastHarvestTime = _now();
         emit Harvest(msg.sender, _stakeId, harvestableYield, _now());
@@ -164,7 +164,7 @@ contract FixedStaking is Ownable {
 
     function withdrawCollectedFees(address to, uint256 amount) public onlyOwner {
         require(collectedFees >= amount, "Amount is more than there are collectedFees!");
-        token.transfer(to, amount);
+        token.safeTransfer(to, amount);
         collectedFees = collectedFees.sub(amount);
     }
 
