@@ -58,7 +58,12 @@ describe("FixedStaking", function () {
           aliceInitBalance = BigNumber.from(await this.token.balanceOf(this.alice.address))
           await this.token.approve(this.pool.address, 1000000)
 
-          await this.pool.stake(10000)
+          stake1 = await this.pool.stake(10000)
+        })
+
+        it("emits event Transfer on staking", async function () {
+          await expect(stake1).to.emit(this.token, "Transfer")
+                  .withArgs(this.alice.address, this.pool.address, 10000)
         })
 
         it("Stop() called by owner closes stakes", async function () {
@@ -98,7 +103,12 @@ describe("FixedStaking", function () {
 
         describe("second stake of Alice", function () {
           beforeEach(async function () {
-            await this.pool.stake(20000)
+            stake2 = await this.pool.stake(20000)
+          })
+
+          it("emits event Transfer on staking", async function () {
+            await expect(stake2).to.emit(this.token, "Transfer")
+                    .withArgs(this.alice.address, this.pool.address, 20000)
           })
 
           it("check stakes length and token balance", async function () {
@@ -152,12 +162,16 @@ describe("FixedStaking", function () {
 
             describe("early unstake first deposit", function () {
               beforeEach(async function () {
-                await this.pool.unstake(0)
+                unstake1 = await this.pool.unstake(0)
+              })
+
+              it("emits event Transfer on unstaking", async function () {
+                fee1 = BigNumber.from(10000).mul("155").div(10000)
+                await expect(unstake1).to.emit(this.token, "Transfer")
+                        .withArgs(this.pool.address, this.alice.address, BigNumber.from(10000).sub(fee1))
               })
 
               it("fee stays on pool balance", async function () {
-                fee1 = BigNumber.from(10000).mul("155").div(10000)
-
                 expect(await this.pool.totalStaked()).to.equal("20000")
                 expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
                 expect(await this.pool.collectedFees()).to.equal(reward)
@@ -182,8 +196,8 @@ describe("FixedStaking", function () {
                 await expect(this.pool.unstake(0)).to.be.revertedWith("Stake is not active!")
               })
 
-              describe("function withdrawCollectedFees", function () {
-                it("not possible when amount is greater than the penalties", async function () {
+              describe("owner withdraws collected fees", function () {
+                it("reverts if amount > collectedFees", async function () {
                   await expect(this.pool.withdrawCollectedFees(this.alice.address, 1000)).to.be.revertedWith(
                     "Amount is more than there are collectedFees"
                   )
@@ -191,17 +205,26 @@ describe("FixedStaking", function () {
 
                 it("withdrawCollectedFees", async function () {
                   await this.pool.withdrawCollectedFees(this.alice.address, fee1.sub(10))
-                  
                   expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.sub(20000).sub(10))
                   expect(await this.pool.collectedFees()).to.equal(10)
+                })
+
+                it("emits Transfer event on withdrawCollectedFees", async function() {
+                  await expect(await this.pool.withdrawCollectedFees(this.alice.address, 10))
+                          .to.emit(this.token, "Transfer")
+                            .withArgs(this.pool.address, this.alice.address, 10)
                 })
               })
 
               describe("harvesting on first stake", function () {
                 beforeEach(async function () {
                   expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.sub(20000).sub(fee1))
+                  harvest1 = await this.pool.harvest(0)
+                })
 
-                  await this.pool.harvest(0)
+                it("emits event Transfer with harvesting rewards", async function() {
+                  await expect(harvest1).to.emit(this.token, "Transfer")
+                          .withArgs(this.pool.address, this.alice.address, reward.div(2))
                 })
 
                 it("Alice's stake became inactive and fee got withheld", async function () {
@@ -222,11 +245,16 @@ describe("FixedStaking", function () {
 
               describe("early unstake second deposit after first", function () {
                 beforeEach(async function () {
-                  await this.pool.unstake(1)
+                  unstake2 = await this.pool.unstake(1)
+                })
+
+                it("emits Transfer event on unstaking", async function () {
+                  fee2 = BigNumber.from(20000).mul("155").div(10000)
+                  await expect(unstake2).to.emit(this.token, "Transfer")
+                          .withArgs(this.pool.address, this.alice.address, BigNumber.from(20000).sub(fee2))
                 })
 
                 it("contract states", async function () {
-                  fee2 = BigNumber.from(20000).mul("155").div(10000)
 
                   expect(await this.pool.totalStaked()).to.equal("0")
                   expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
@@ -251,8 +279,8 @@ describe("FixedStaking", function () {
                   await expect(this.pool.unstake(1)).to.be.revertedWith("Stake is not active!")
                 })
 
-                describe("function withdrawCollectedFees", function () {
-                  it("not possible when amount is greater than the penalties", async function () {
+                describe("owner withdraws collected fees", function () {
+                  it("reverts if amount > collectedFees", async function () {
                     await expect(this.pool.withdrawCollectedFees(this.alice.address, 1000)).to.be.revertedWith(
                       "Amount is more than there are collectedFees"
                     )
@@ -263,12 +291,23 @@ describe("FixedStaking", function () {
                     expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.sub(fee1).sub(25))
                     expect(await this.pool.collectedFees()).to.equal(fee1.add(25))
                   })
+
+                  it("emits Transfer event on withdrawCollectedFees", async function() {
+                    await expect(await this.pool.withdrawCollectedFees(this.alice.address, 25))
+                            .to.emit(this.token, "Transfer")
+                              .withArgs(this.pool.address, this.alice.address, 25)
+                  })
                 })
 
                 describe("harvesting on second stake", function () {
                   beforeEach(async function () {
                     expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.sub(fee1).sub(fee2))
-                    await this.pool.harvest(1)
+                    harvest2 = await this.pool.harvest(1)
+                  })
+
+                  it("emits Transfer event with harvesting", async function() {
+                    await expect(harvest2).to.emit(this.token, "Transfer")
+                            .withArgs(this.pool.address, this.alice.address, secondReward.div(2))
                   })
 
                   it("her stake is correct", async function () {
@@ -317,7 +356,12 @@ describe("FixedStaking", function () {
 
               describe("early unstake first deposit", function () {
                 beforeEach(async function () {
-                  await this.pool.unstake(0)
+                  unstake1 = await this.pool.unstake(0)
+                })
+  
+                it("emits Transfer event on unstaking", async function () {
+                  await expect(unstake1).to.emit(this.token, "Transfer")
+                          .withArgs(this.pool.address, this.alice.address, BigNumber.from(10000).sub(fee1))
                 })
 
                 it("contract states", async function () {
@@ -355,6 +399,12 @@ describe("FixedStaking", function () {
                       .to.equal(aliceInitBalance.sub(20000).sub(fee1).add(reward.div("2").sub("1")))
                     expect(await this.pool.collectedFees()).to.equal(reward.sub(reward.div("2").sub("1")))
                   })
+
+                  it("emits Transfer event on withdrawCollectedFees", async function() {
+                    await expect(await this.pool.withdrawCollectedFees(this.alice.address, 1))
+                            .to.emit(this.token, "Transfer")
+                              .withArgs(this.pool.address, this.alice.address, 1)
+                  })
                 })
 
                 describe("Alice harvests her first stake", function () {
@@ -377,7 +427,12 @@ describe("FixedStaking", function () {
 
                 describe("Alice early unstakes second deposit", function () {
                   beforeEach(async function () {
-                    await this.pool.unstake(1)
+                    unstake2 = await this.pool.unstake(1)
+                  })
+    
+                  it("emits event Transfer on unstaking", async function () {
+                    await expect(unstake2).to.emit(this.token, "Transfer")
+                            .withArgs(this.pool.address, this.alice.address, BigNumber.from(20000).sub(fee2))
                   })
 
                   it("contract states", async function () {
@@ -403,8 +458,8 @@ describe("FixedStaking", function () {
                     await expect(this.pool.unstake(1)).to.be.revertedWith("Stake is not active!")
                   })
 
-                  describe("function withdrawCollectedFees", function () {
-                    it("not possible when amount is greater than the penalties", async function () {
+                  describe("owner withdraws collected fees", function () {
+                    it("reverts if amount > collectedFees", async function () {
                       await expect(this.pool.withdrawCollectedFees(this.alice.address, 1000)).to.be.revertedWith(
                         "Amount is more than there are collectedFees"
                       )
@@ -415,6 +470,12 @@ describe("FixedStaking", function () {
                       expect(await this.token.balanceOf(this.alice.address))
                         .to.equal(aliceInitBalance.sub(fee1).sub(fee2).add(secondReward.div("2").sub("1")))
                       expect(await this.pool.collectedFees()).to.equal(secondReward.add(reward).sub(secondReward.div("2").sub("1")))
+                    })
+
+                    it("emits Transfer event on withdrawCollectedFees", async function() {
+                      await expect(await this.pool.withdrawCollectedFees(this.alice.address, 1))
+                              .to.emit(this.token, "Transfer")
+                                .withArgs(this.pool.address, this.alice.address, 1)
                     })
                   })
 
@@ -468,7 +529,12 @@ describe("FixedStaking", function () {
 
                 describe("unstake first deposit", function () {
                   beforeEach(async function () {
-                    await this.pool.unstake(0)
+                    unstake1 = await this.pool.unstake(0)
+                  })
+    
+                  it("emits event Transfer on unstaking", async function () {
+                    await expect(unstake1).to.emit(this.token, "Transfer")
+                            .withArgs(this.pool.address, this.alice.address, BigNumber.from(10000))
                   })
 
                   it("contract states", async function () {
@@ -514,8 +580,12 @@ describe("FixedStaking", function () {
 
                   describe("unstake second deposit after first", function () {
                     beforeEach(async function () {
-                      expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.sub(20000))
-                      await this.pool.unstake(1)
+                      unstake2 = await this.pool.unstake(1)
+                    })
+      
+                    it("emits event Transfer on unstaking", async function () {
+                      await expect(unstake2).to.emit(this.token, "Transfer")
+                              .withArgs(this.pool.address, this.alice.address, BigNumber.from(20000))
                     })
 
                     it("contract states", async function () {
@@ -546,9 +616,16 @@ describe("FixedStaking", function () {
                       beforeEach(async function () {
                         expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance)
                         expect(await this.token.balanceOf(this.pool.address)).to.equal(totalReward);
-                        await this.pool.harvest(0)
-                        await this.pool.harvest(1)
+                        harvest1 = await this.pool.harvest(0)
+                        harvest2 = await this.pool.harvest(1)
                       })
+
+                      it("emits Transfers event on harvesting", async function() {
+                        await expect(harvest1).to.emit(this.token, "Transfer")
+                                .withArgs(this.pool.address, this.alice.address, reward)
+                        await expect(harvest2).to.emit(this.token, "Transfer")
+                                .withArgs(this.pool.address, this.alice.address, secondReward)
+                        })
 
                       it("her stake is correct after both harvest", async function () {
                         expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.add(totalReward))
@@ -576,18 +653,69 @@ describe("FixedStaking", function () {
 
           describe("then Bob deposited", function () {
             beforeEach(async function () {
+              bobReward = BigNumber.from(345).mul(155).div(10000)
+              await this.token.transfer(this.pool.address, bobReward)
+
               await this.token.transfer(this.bob.address, BigNumber.from(345))
               await this.token.connect(this.bob).approve(this.pool.address, 345)
               await this.pool.connect(this.bob).stake(345)
             })
 
-            it("Bob's stake is visible", async function () {
+            it("check Bob's stake details", async function () {
               expect(await this.pool.getStakesLength(this.bob.address)).to.equal("1")
               expect((await this.pool.getStake(this.bob.address, 0)).active).to.equal(true)
               expect((await this.pool.getStake(this.bob.address, 0)).stakedAmount).to.equal("345")
               expect((await this.pool.getStake(this.bob.address, 0)).harvestedYield).to.equal("0")
               expect((await this.pool.getStake(this.bob.address, 0)).totalYield).to.equal(BigNumber.from("345").mul("155").div("10000"))
             })
+
+            describe("after 1 day passed Bob unstakes with fee charged", function() {
+              beforeEach(async function () {
+                await this.pool.increaseCurrentTime(days.mul("1"))
+                bobUnstake1 = this.pool.connect(this.bob).unstake(0)
+              })
+
+              it("emits events Transfer and changes states", async function() {
+                feeBob = BigNumber.from(345).mul(155).div(10000)
+
+                await expect(bobUnstake1).to.emit(this.token, 'Transfer')
+                        .withArgs(this.pool.address, this.bob.address, BigNumber.from(345).sub(feeBob))
+                
+                expect(await this.token.balanceOf(this.bob.address)).to.equal(BigNumber.from(345).sub(feeBob))
+                expect(await this.pool.collectedFees()).to.equal(feeBob)
+              })
+            })
+
+            describe("after 30 day passed Bob unstakes with fee charged", function() {
+              beforeEach(async function () {
+                await this.pool.increaseCurrentTime(days.mul("30"))
+                bobUnstake30 = this.pool.connect(this.bob).unstake(0)
+              })
+
+              it("emits events Transfer and changes states", async function() {
+                await expect(bobUnstake30).to.emit(this.token, 'Transfer')
+                        .withArgs(this.pool.address, this.bob.address, BigNumber.from(345).sub(feeBob))
+
+                expect(await this.token.balanceOf(this.bob.address)).to.equal(BigNumber.from(345).sub(feeBob))
+                expect(await this.pool.collectedFees()).to.equal(feeBob)
+              })
+            })
+
+            describe("after 30 day passed Bob unstakes without fee charged", function() {
+              beforeEach(async function () {
+                await this.pool.increaseCurrentTime(days.mul("31"))
+                bobUnstake31 = this.pool.connect(this.bob).unstake(0)
+              })
+
+              it("emits events Transfer and changes states", async function() {
+                await expect(bobUnstake31).to.emit(this.token, 'Transfer')
+                        .withArgs(this.pool.address, this.bob.address, BigNumber.from(345))
+                
+                expect(await this.token.balanceOf(this.bob.address)).to.equal(BigNumber.from(345))
+                expect(await this.pool.collectedFees()).to.equal(0)
+              })
+            }) 
+
             it("Non-owner can't stop staking", async function () {
               await expect(this.pool.connect(this.bob).stop()).to.be.revertedWith("Ownable: caller is not the owner")
             })
