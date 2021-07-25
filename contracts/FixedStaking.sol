@@ -12,7 +12,7 @@ contract FixedStaking is Ownable {
     using SafeERC20 for IERC20;
 
     struct StakeInfo {
-        bool active;
+        bool staked;
         uint256 stakedAmount;
         uint256 startTime;
         uint256 endTime;
@@ -79,7 +79,7 @@ contract FixedStaking is Ownable {
         public
         view
         returns (
-            bool active,
+            bool staked,
             uint256 stakedAmount,
             uint256 startTime,
             uint256 endTime,
@@ -90,7 +90,7 @@ contract FixedStaking is Ownable {
         )
     {
         StakeInfo memory _stake = stakes[_userAddress][_stakeId];
-        active = _stake.active;
+        staked = _stake.staked;
         stakedAmount = _stake.stakedAmount;
         startTime = _stake.startTime;
         endTime = _stake.endTime;
@@ -121,7 +121,7 @@ contract FixedStaking is Ownable {
         uint256 endTime = _now().add(stakeDurationDays.mul(1 days));
         stakes[msg.sender].push(
             StakeInfo({
-                active: true,
+                staked: true,
                 stakedAmount: _amount,
                 startTime: startTime,
                 endTime: endTime,
@@ -138,7 +138,7 @@ contract FixedStaking is Ownable {
     // Withdraw user's stake
     function unstake(uint256 _stakeId) public {
         (
-            bool active,
+            bool staked,
             uint256 stakedAmount,
             uint256 startTime,
             uint256 endTime,
@@ -148,10 +148,10 @@ contract FixedStaking is Ownable {
             uint256 harvestableYield
         ) = getStake(msg.sender, _stakeId);
         bool early;
-        require(active, "Stake is not active!");
+        require(staked, "Unstaked already");
         if (_now() > endTime) {
             token.safeTransfer(msg.sender, stakedAmount);
-            stakes[msg.sender][_stakeId].active = false;
+            stakes[msg.sender][_stakeId].staked = false;
             stakedTokens = stakedTokens.sub(stakedAmount);
             early = false;
         } else {
@@ -161,7 +161,7 @@ contract FixedStaking is Ownable {
 
             uint256 newTotalYield = harvestedYield.add(harvestableYield);
             allocatedTokens = allocatedTokens.sub(totalYield.sub(newTotalYield));
-            stakes[msg.sender][_stakeId].active = false;
+            stakes[msg.sender][_stakeId].staked = false;
             stakes[msg.sender][_stakeId].endTime = _now();
             stakes[msg.sender][_stakeId].totalYield = newTotalYield;
             stakedTokens = stakedTokens.sub(stakedAmount);

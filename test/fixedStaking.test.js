@@ -120,7 +120,7 @@ describe("FixedStaking", function () {
           })
 
           it("check stake details", async function () {
-            expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
+            expect((await this.pool.getStake(this.alice.address, 0)).staked).to.equal(true)
             expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("10000")
             expect((await this.pool.getStake(this.alice.address, 0)).startTime).to.equal(0)
             expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("30"))
@@ -165,7 +165,7 @@ describe("FixedStaking", function () {
 
             it("check details of Alice's second stake", async function () {
               expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.sub(10000).sub(20000))
-              expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(true)
+              expect((await this.pool.getStake(this.alice.address, 1)).staked).to.equal(true)
               expect((await this.pool.getStake(this.alice.address, 1)).stakedAmount).to.equal("20000")
               expect((await this.pool.getStake(this.alice.address, 1)).startTime).to.equal("0")
               expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("30"))
@@ -183,7 +183,7 @@ describe("FixedStaking", function () {
               })
 
               it("her stake is correct", async function () {
-                expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
+                expect((await this.pool.getStake(this.alice.address, 0)).staked).to.equal(true)
                 expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("10000")
                 expect((await this.pool.getStake(this.alice.address, 0)).startTime).to.equal("0")
                 expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("30"))
@@ -194,7 +194,7 @@ describe("FixedStaking", function () {
                 )
                 expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward.div(2))
 
-                expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(true)
+                expect((await this.pool.getStake(this.alice.address, 1)).staked).to.equal(true)
                 expect((await this.pool.getStake(this.alice.address, 1)).stakedAmount).to.equal("20000")
                 expect((await this.pool.getStake(this.alice.address, 1)).startTime).to.equal("0")
                 expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("30"))
@@ -238,7 +238,7 @@ describe("FixedStaking", function () {
                 it("her stake is correct", async function () {
                   expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.sub(20000).sub(fee1))
 
-                  expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(false)
+                  expect((await this.pool.getStake(this.alice.address, 0)).staked).to.equal(false)
                   expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("15"))
                   expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal(reward.div("2"))
                   expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
@@ -249,7 +249,7 @@ describe("FixedStaking", function () {
                 })
 
                 it("can't second time unstake position", async function () {
-                  await expect(this.pool.unstake(0)).to.be.revertedWith("Stake is not active!")
+                  await expect(this.pool.unstake(0)).to.be.revertedWith("Unstaked already")
                 })
 
                 it("allocatedTokens decreased", async function () {
@@ -350,7 +350,7 @@ describe("FixedStaking", function () {
                   it("her stake is correct", async function () {
                     expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.sub(fee1).sub(fee2))
 
-                    expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(false)
+                    expect((await this.pool.getStake(this.alice.address, 1)).staked).to.equal(false)
                     expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("15"))
                     expect((await this.pool.getStake(this.alice.address, 1)).totalYield).to.equal(secondReward.div("2"))
                     expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
@@ -361,7 +361,7 @@ describe("FixedStaking", function () {
                   })
 
                   it("can't second time unstake position", async function () {
-                    await expect(this.pool.unstake(1)).to.be.revertedWith("Stake is not active!")
+                    await expect(this.pool.unstake(1)).to.be.revertedWith("Unstaked already")
                   })
 
                   it("allocatedTokens decreased", async function () {
@@ -456,7 +456,7 @@ describe("FixedStaking", function () {
                 })
 
                 it("her stake is correct", async function () {
-                  expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
+                  expect((await this.pool.getStake(this.alice.address, 0)).staked).to.equal(true)
                   expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("10000")
                   expect((await this.pool.getStake(this.alice.address, 0)).startTime).to.equal("0")
                   expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("30"))
@@ -467,7 +467,7 @@ describe("FixedStaking", function () {
                   )
                   expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward)
 
-                  expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(true)
+                  expect((await this.pool.getStake(this.alice.address, 1)).staked).to.equal(true)
                   expect((await this.pool.getStake(this.alice.address, 1)).stakedAmount).to.equal("20000")
                   expect((await this.pool.getStake(this.alice.address, 1)).startTime).to.equal("0")
                   expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("30"))
@@ -509,7 +509,7 @@ describe("FixedStaking", function () {
 
                   it("her stake is correct", async function () {
                     expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.sub(20000).sub(fee1))
-                    expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(false)
+                    expect((await this.pool.getStake(this.alice.address, 0)).staked).to.equal(false)
                     expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("30"))
                     expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal(reward)
                     expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
@@ -520,7 +520,7 @@ describe("FixedStaking", function () {
                   })
 
                   it("can't second time unstake position", async function () {
-                    await expect(this.pool.unstake(0)).to.be.revertedWith("Stake is not active!")
+                    await expect(this.pool.unstake(0)).to.be.revertedWith("Unstaked already")
                   })
 
                   it("unallocatedTokens increased", async function () {
@@ -613,7 +613,7 @@ describe("FixedStaking", function () {
                     it("check resulting Alice's balance and stake status", async function () {
                       expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.sub(fee1).sub(fee2))
 
-                      expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(false)
+                      expect((await this.pool.getStake(this.alice.address, 1)).staked).to.equal(false)
                       expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("30"))
                       expect((await this.pool.getStake(this.alice.address, 1)).totalYield).to.equal(secondReward)
                       expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
@@ -624,7 +624,7 @@ describe("FixedStaking", function () {
                     })
 
                     it("can't second time unstake position", async function () {
-                      await expect(this.pool.unstake(1)).to.be.revertedWith("Stake is not active!")
+                      await expect(this.pool.unstake(1)).to.be.revertedWith("Unstaked already")
                     })
 
                     it("unallocatedTokens increased", async function () {
@@ -692,7 +692,7 @@ describe("FixedStaking", function () {
                   })
 
                   it("her stake is correct", async function () {
-                    expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
+                    expect((await this.pool.getStake(this.alice.address, 0)).staked).to.equal(true)
                     expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("10000")
                     expect((await this.pool.getStake(this.alice.address, 0)).startTime).to.equal("0")
                     expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("30"))
@@ -703,7 +703,7 @@ describe("FixedStaking", function () {
                     )
                     expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward)
 
-                    expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(true)
+                    expect((await this.pool.getStake(this.alice.address, 1)).staked).to.equal(true)
                     expect((await this.pool.getStake(this.alice.address, 1)).stakedAmount).to.equal("20000")
                     expect((await this.pool.getStake(this.alice.address, 1)).startTime).to.equal("0")
                     expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("30"))
@@ -747,7 +747,7 @@ describe("FixedStaking", function () {
 
                     it("her stake is correct", async function () {
                       expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.sub(20000))
-                      expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(false)
+                      expect((await this.pool.getStake(this.alice.address, 0)).staked).to.equal(false)
                       expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("30"))
                       expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal(reward)
                       expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
@@ -758,7 +758,7 @@ describe("FixedStaking", function () {
                     })
 
                     it("can't second time unstake position", async function () {
-                      await expect(this.pool.unstake(0)).to.be.revertedWith("Stake is not active!")
+                      await expect(this.pool.unstake(0)).to.be.revertedWith("Unstaked already")
                     })
 
                     describe("harvesting on first stake", function () {
@@ -830,7 +830,7 @@ describe("FixedStaking", function () {
 
                       it("her stake is correct", async function () {
                         expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance)
-                        expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(false)
+                        expect((await this.pool.getStake(this.alice.address, 1)).staked).to.equal(false)
                         expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("30"))
                         expect((await this.pool.getStake(this.alice.address, 1)).totalYield).to.equal(secondReward)
                         expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
@@ -841,7 +841,7 @@ describe("FixedStaking", function () {
                       })
 
                       it("can't second time unstake position", async function () {
-                        await expect(this.pool.unstake(1)).to.be.revertedWith("Stake is not active!")
+                        await expect(this.pool.unstake(1)).to.be.revertedWith("Unstaked already")
                       })
 
                       describe("harvesting on first and second stake", function () {
@@ -918,7 +918,7 @@ describe("FixedStaking", function () {
 
               it("check Bob's stake details", async function () {
                 expect(await this.pool.getStakesLength(this.bob.address)).to.equal("1")
-                expect((await this.pool.getStake(this.bob.address, 0)).active).to.equal(true)
+                expect((await this.pool.getStake(this.bob.address, 0)).staked).to.equal(true)
                 expect((await this.pool.getStake(this.bob.address, 0)).stakedAmount).to.equal("345")
                 expect((await this.pool.getStake(this.bob.address, 0)).harvestedYield).to.equal("0")
                 expect((await this.pool.getStake(this.bob.address, 0)).totalYield).to.equal(BigNumber.from("345").mul("155").div("10000"))
