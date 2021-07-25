@@ -553,8 +553,7 @@ describe("FixedStaking", function () {
                     })
 
                     it("emits event Transfer on harvest", async function () {
-                      await expect(harvest1).to.emit(this.token, "Transfer")
-                              .withArgs(this.pool.address, this.alice.address, reward)
+                      await expect(harvest1).to.emit(this.token, "Transfer").withArgs(this.pool.address, this.alice.address, reward)
                     })
 
                     it("emits event Harvest with harvesting rewards", async function () {
@@ -662,8 +661,7 @@ describe("FixedStaking", function () {
                       })
 
                       it("emits event Transfer on harvest", async function () {
-                        await expect(harvest2).to.emit(this.token, "Transfer")
-                                .withArgs(this.pool.address, this.alice.address, secondReward)
+                        await expect(harvest2).to.emit(this.token, "Transfer").withArgs(this.pool.address, this.alice.address, secondReward)
                       })
                       it("emits event Harvest with harvesting rewards", async function () {
                         const stakeId = 1
@@ -721,18 +719,18 @@ describe("FixedStaking", function () {
                     })
 
                     it("emits event Transfer on unstaking", async function () {
-                      await expect(unstake1).to.emit(this.token, "Transfer")
-                              .withArgs(this.pool.address, this.alice.address, BigNumber.from(10000))
+                      await expect(unstake1)
+                        .to.emit(this.token, "Transfer")
+                        .withArgs(this.pool.address, this.alice.address, BigNumber.from(10000))
                     })
-  
+
                     it("emits event Unstake on unstaking", async function () {
-  
                       const stakeId = 0
                       const depositAmount = 10000
                       const startTime = 0
-                      const endTime = 30*24*60*60
+                      const endTime = 30 * 24 * 60 * 60
                       const earlyStake = false
-  
+
                       await expect(unstake1)
                         .to.emit(this.pool, "Unstake")
                         .withArgs(this.alice.address, stakeId, depositAmount, startTime, endTime, earlyStake)
@@ -763,7 +761,7 @@ describe("FixedStaking", function () {
 
                     describe("harvesting on first stake", function () {
                       beforeEach(async function () {
-                        harvest1=await this.pool.harvest(0)
+                        harvest1 = await this.pool.harvest(0)
                       })
 
                       it("allocatedTokens decreased", async function () {
@@ -771,19 +769,15 @@ describe("FixedStaking", function () {
                       })
 
                       it("emits event Transfer on harvest", async function () {
-                        await expect(harvest1).to.emit(this.token, "Transfer")
-                                .withArgs(this.pool.address, this.alice.address, reward)
+                        await expect(harvest1).to.emit(this.token, "Transfer").withArgs(this.pool.address, this.alice.address, reward)
                       })
 
                       it("emits event Harvest with harvesting rewards", async function () {
-
                         const stakeId = 0
                         const harvestableYield = 155
-                        const currentTime = 31*24*60*60
-  
-                        await expect(harvest1)
-                          .to.emit(this.pool, "Harvest")
-                          .withArgs(this.alice.address, stakeId, harvestableYield, currentTime)
+                        const currentTime = 31 * 24 * 60 * 60
+
+                        await expect(harvest1).to.emit(this.pool, "Harvest").withArgs(this.alice.address, stakeId, harvestableYield, currentTime)
                       })
 
                       it("her stake is correct", async function () {
@@ -804,18 +798,18 @@ describe("FixedStaking", function () {
                       })
 
                       it("emits event Transfer on unstaking", async function () {
-                        await expect(unstake2).to.emit(this.token, "Transfer")
-                                .withArgs(this.pool.address, this.alice.address, BigNumber.from(20000))
+                        await expect(unstake2)
+                          .to.emit(this.token, "Transfer")
+                          .withArgs(this.pool.address, this.alice.address, BigNumber.from(20000))
                       })
-  
+
                       it("emits event Unstake on unstaking", async function () {
-  
                         const stakeId = 1
                         const depositAmount = 20000
                         const startTime = 0
-                        const endTime = 30*24*60*60
+                        const endTime = 30 * 24 * 60 * 60
                         const earlyStake = false
-  
+
                         await expect(unstake2)
                           .to.emit(this.pool, "Unstake")
                           .withArgs(this.alice.address, stakeId, depositAmount, startTime, endTime, earlyStake)
@@ -856,19 +850,16 @@ describe("FixedStaking", function () {
                           expect(await this.pool.allocatedTokens()).to.equal(0)
                         })
 
-                        it("emits Transfers event on harvesting", async function() {
-                          await expect(harvest1).to.emit(this.token, "Transfer")
-                                  .withArgs(this.pool.address, this.alice.address, reward)
-                          await expect(harvest2).to.emit(this.token, "Transfer")
-                                  .withArgs(this.pool.address, this.alice.address, secondReward)
+                        it("emits Transfers event on harvesting", async function () {
+                          await expect(harvest1).to.emit(this.token, "Transfer").withArgs(this.pool.address, this.alice.address, reward)
+                          await expect(harvest2).to.emit(this.token, "Transfer").withArgs(this.pool.address, this.alice.address, secondReward)
                         })
-  
+
                         it("emits event Harvest with harvesting rewards", async function () {
-  
                           const stakeId = 0
                           const harvestableYield = 155
-                          const currentTime = 31*24*60*60
-  
+                          const currentTime = 31 * 24 * 60 * 60
+
                           await expect(harvest1)
                             .to.emit(this.pool, "Harvest")
                             .withArgs(this.alice.address, stakeId, harvestableYield, currentTime)
