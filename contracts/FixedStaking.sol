@@ -78,12 +78,15 @@ contract FixedStaking is Ownable {
      * @param _earlyUnstakeFee fee for unstaking before stake expiration
      */
     constructor(
-        IERC20 _token,
+        address _token,
         uint256 _stakeDurationDays,
         uint256 _yieldRate,
         uint256 _earlyUnstakeFee
     ) {
-        token = _token;
+        require(_token != address(0), "Empty token address");
+        require(_yieldRate > 0, "Zero yield rate");
+        require(_earlyUnstakeFee > 0, "Zero early Unstake Fee");
+        token = IERC20(_token);
         stakeDurationDays = _stakeDurationDays;
         yieldRate = _yieldRate;
         earlyUnstakeFee = _earlyUnstakeFee;
@@ -96,7 +99,9 @@ contract FixedStaking is Ownable {
      * @param _to  address who will receive the funds
      * @param _amount amount of tokens in atto (1e-18) units
      */
-    function withdrawUnallocatedTokens(address _to, uint256 _amount) external onlyOwner {
+    function withdrawUnallocatedTokens(address _to, uint256 _amount) public onlyOwner {
+        require(_to != address(0), "Empty receiver address");
+        require(_amount > 0, "Zero amount");
         require(unallocatedTokens() >= _amount, "Not enough unallocatedTokens");
         require(_now() >= withdrawalUnlockTime, "Can't withdraw until withdrawalUnlockTime");
         token.safeTransfer(_to, _amount);
@@ -105,14 +110,16 @@ contract FixedStaking is Ownable {
     /**
      * @dev start accepting new stakes. Called only by the owner
      */
-    function start() external onlyOwner {
+    function start() public onlyOwner {
+        require(!stakesOpen, "Stakes are open already");
         stakesOpen = true;
     }
 
     /**
      * @dev stop accepting new stakes. Called only by the owner
      */
-    function stop() external onlyOwner {
+    function stop() public onlyOwner {
+        require(stakesOpen, "Stakes are stopped already");
         stakesOpen = false;
     }
 
@@ -122,6 +129,7 @@ contract FixedStaking is Ownable {
      */
     function stake(uint256 _amount) external {
         require(stakesOpen, "stake: not open");
+        require(_amount > 0, "stake: zero amount");
         // entire reward allocated for the user for this stake
         uint256 totalYield = _amount.mul(yieldRate).div(10000);
         require(unallocatedTokens() >= totalYield, "stake: not enough allotted tokens to pay yield");

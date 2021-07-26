@@ -10,7 +10,7 @@ contract FixedStakingMock is FixedStaking {
     uint256 private currentTime;
 
     constructor(
-        IERC20 _token,
+        address _token,
         uint256 _stakeDurationDays,
         uint256 _rewardRate,
         uint256 _earlyUnstakeFee
