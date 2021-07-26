@@ -9,13 +9,13 @@ describe("FixedStaking", function () {
     this.signers = await ethers.getSigners()
     this.alice = this.signers[0]
     this.bob = this.signers[1]
-    this.tokenFactory = await ethers.getContractFactory("DAO1")
+    this.tokenFactory = await ethers.getContractFactory("UniFi")
     this.contract = await ethers.getContractFactory("FixedStakingMock")
   })
 
   describe("30 days, 1.55% interest, 1.55% penalty", function () {
     beforeEach(async function () {
-      this.token = await this.tokenFactory.deploy("DAO1", "DAO1", this.alice.address)
+      this.token = await this.tokenFactory.deploy("UniFi", "UniFi", this.alice.address)
       await this.token.deployed()
       this.pool = await this.contract.deploy(this.token.address, 30, 155, 155)
       await this.pool.deployed()
@@ -1010,7 +1010,7 @@ describe("FixedStaking", function () {
 
     describe("90 days, 11.05% interest, 11.05% penalty", function () {
       beforeEach(async function () {
-        this.token = await this.tokenFactory.deploy("DAO1", "DAO1", this.alice.address)
+        this.token = await this.tokenFactory.deploy("UniFi", "UniFi", this.alice.address)
         await this.token.deployed()
         this.pool = await this.contract.deploy(this.token.address, 90, 1105, 1105)
         await this.pool.deployed()

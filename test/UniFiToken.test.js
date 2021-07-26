@@ -1,6 +1,6 @@
 const { expect } = require("chai")
 
-describe("DAO1 token", function () {
+describe("UniFi token", function () {
   const totalSupplyAmount = ethers.utils.parseEther("3600000")
 
   beforeEach(async function () {
@@ -10,16 +10,16 @@ describe("DAO1 token", function () {
     this.account1 = this.signers[2]
     this.account2 = this.signers[3]
 
-    this.contract = await ethers.getContractFactory("DAO1")
-    this.token = await this.contract.deploy("DAO1", "DAO1", this.owner.address)
+    this.contract = await ethers.getContractFactory("UniFi")
+    this.token = await this.contract.deploy("UniFi", "UniFi", this.owner.address)
   })
 
   it("has a name", async function () {
-    expect(await this.token.name()).to.equal("DAO1")
+    expect(await this.token.name()).to.equal("UniFi")
   })
 
   it("has a symbol", async function () {
-    expect(await this.token.symbol()).to.equal("DAO1")
+    expect(await this.token.symbol()).to.equal("UniFi")
   })
 
   it("has 18 decimals", async function () {
@@ -44,7 +44,7 @@ describe("DAO1 token", function () {
 
     describe("Basic transfers", function () {
       beforeEach(async function () {
-        ownerDAO1Balance = await this.token.balanceOf(this.owner.address)
+        ownerUniFiBalance = await this.token.balanceOf(this.owner.address)
         transfer = await this.token.connect(this.owner).transfer(this.account1.address, amount)
       })
 
@@ -53,7 +53,7 @@ describe("DAO1 token", function () {
       })
 
       it("spender's balance decreased", async function () {
-        expect(await this.token.balanceOf(this.owner.address)).to.equal(ownerDAO1Balance.sub(amount))
+        expect(await this.token.balanceOf(this.owner.address)).to.equal(ownerUniFiBalance.sub(amount))
       })
 
       it("receiver's balance increased", async function () {
@@ -86,7 +86,7 @@ describe("DAO1 token", function () {
 
       describe("transferFrom", function () {
         beforeEach(async function () {
-          ownerDAO1Balance = await this.token.balanceOf(this.owner.address)
+          ownerUniFiBalance = await this.token.balanceOf(this.owner.address)
           transferFrom = await this.token.connect(this.account1).transferFrom(this.owner.address, this.account2.address, amount)
         })
 
@@ -103,7 +103,7 @@ describe("DAO1 token", function () {
         })
 
         it("owner balance after transfer", async function () {
-          expect(await this.token.balanceOf(this.owner.address)).to.equal(ownerDAO1Balance.sub(amount))
+          expect(await this.token.balanceOf(this.owner.address)).to.equal(ownerUniFiBalance.sub(amount))
         })
 
         it("check account2 balance after transfer", async function () {
