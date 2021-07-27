@@ -91,7 +91,7 @@ contract FixedStaking is Ownable {
      * @param _to  address who will receive the funds
      * @param _amount amount of tokens in atto (1e-18) units
      */
-    function withdrawUnallocatedTokens(address _to, uint256 _amount) public onlyOwner {
+    function withdrawUnallocatedTokens(address _to, uint256 _amount) external onlyOwner {
         require(unallocatedTokens() >= _amount, "Not enough unallocatedTokens");
         token.safeTransfer(_to, _amount);
     }
@@ -99,14 +99,14 @@ contract FixedStaking is Ownable {
     /**
      * @dev start accepting new stakes. Called only by the owner
      */
-    function start() public onlyOwner {
+    function start() external onlyOwner {
         stakesOpen = true;
     }
 
     /**
      * @dev stop accepting new stakes. Called only by the owner
      */
-    function stop() public onlyOwner {
+    function stop() external onlyOwner {
         stakesOpen = false;
     }
 
@@ -114,7 +114,7 @@ contract FixedStaking is Ownable {
      * @dev submit the stake
      * @param _amount   amount of tokens to be transferred from user's account
      */
-    function stake(uint256 _amount) public {
+    function stake(uint256 _amount) external {
         require(stakesOpen, "stake: not open");
         // entire reward allocated for the user for this stake
         uint256 totalYield = _amount.mul(yieldRate).div(10000);
@@ -142,7 +142,7 @@ contract FixedStaking is Ownable {
      * @dev withdraw the `body` of user's stake. Can be called only once
      * @param _stakeId   Id of the stake
      */
-    function unstake(uint256 _stakeId) public {
+    function unstake(uint256 _stakeId) external {
         (
             bool staked,
             uint256 stakedAmount,
@@ -181,7 +181,7 @@ contract FixedStaking is Ownable {
      * @dev harvest accumulated rewards. Can be called many times.
      * @param _stakeId   Id of the stake
      */
-    function harvest(uint256 _stakeId) public {
+    function harvest(uint256 _stakeId) external {
         (, , , , , uint256 harvestedYield, , uint256 harvestableYield) = getStake(msg.sender, _stakeId);
         require(harvestableYield != 0, "harvestableYield is zero");
         allocatedTokens = allocatedTokens.sub(harvestableYield);
