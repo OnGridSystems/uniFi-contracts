@@ -119,7 +119,6 @@ contract FixedStaking is Ownable {
         // entire reward allocated for the user for this stake
         uint256 totalYield = _amount.mul(yieldRate).div(10000);
         require(unallocatedTokens() >= totalYield, "stake: not enough allotted tokens to pay yield");
-        token.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 startTime = _now();
         uint256 endTime = _now().add(stakeDurationDays.mul(1 days));
         stakes[msg.sender].push(
@@ -136,6 +135,7 @@ contract FixedStaking is Ownable {
         allocatedTokens = allocatedTokens.add(totalYield);
         stakedTokens = stakedTokens.add(_amount);
         emit Stake(msg.sender, getStakesLength(msg.sender), _amount, startTime, endTime);
+        token.safeTransferFrom(msg.sender, address(this), _amount);
     }
 
     /**
@@ -156,15 +156,11 @@ contract FixedStaking is Ownable {
         bool early;
         require(staked, "Unstaked already");
         if (_now() > endTime) {
-            token.safeTransfer(msg.sender, stakedAmount);
             stakes[msg.sender][_stakeId].staked = false;
             stakedTokens = stakedTokens.sub(stakedAmount);
             early = false;
+            token.safeTransfer(msg.sender, stakedAmount);
         } else {
-            uint256 fee = stakedAmount.mul(earlyUnstakeFee).div(10000);
-            uint256 amountToTransfer = stakedAmount.sub(fee);
-            token.safeTransfer(msg.sender, amountToTransfer);
-
             uint256 newTotalYield = harvestedYield.add(harvestableYield);
             allocatedTokens = allocatedTokens.sub(totalYield.sub(newTotalYield));
             stakes[msg.sender][_stakeId].staked = false;
@@ -172,6 +168,10 @@ contract FixedStaking is Ownable {
             stakes[msg.sender][_stakeId].totalYield = newTotalYield;
             stakedTokens = stakedTokens.sub(stakedAmount);
             early = true;
+
+            uint256 fee = stakedAmount.mul(earlyUnstakeFee).div(10000);
+            uint256 amountToTransfer = stakedAmount.sub(fee);
+            token.safeTransfer(msg.sender, amountToTransfer);
         }
 
         emit Unstake(msg.sender, _stakeId, stakedAmount, startTime, endTime, early);
@@ -184,11 +184,11 @@ contract FixedStaking is Ownable {
     function harvest(uint256 _stakeId) public {
         (, , , , , uint256 harvestedYield, , uint256 harvestableYield) = getStake(msg.sender, _stakeId);
         require(harvestableYield != 0, "harvestableYield is zero");
-        token.safeTransfer(msg.sender, harvestableYield);
         allocatedTokens = allocatedTokens.sub(harvestableYield);
         stakes[msg.sender][_stakeId].harvestedYield = harvestedYield.add(harvestableYield);
         stakes[msg.sender][_stakeId].lastHarvestTime = _now();
         emit Harvest(msg.sender, _stakeId, harvestableYield, _now());
+        token.safeTransfer(msg.sender, harvestableYield);
     }
 
     /**
