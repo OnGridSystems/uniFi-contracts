@@ -48,6 +48,27 @@
   },
   "resolutions": {
     "eth-lib": "0.2.8",
-    "diff": "3.5.0"
-    }
+    "diff": "3.5.0",
+    "chokidar": "3.5.2",
+    "lodash": "4.17.21",
+    "underscore": "1.12.1",
+    "web3-utils": "1.5.0",
+    "web3-bzz": "1.4.0",
+    "web3-core-helpers": "1.4.0",
+    "web3-core-method": "1.4.0",
+    "web3-core-requestmanager": "1.4.0",
+    "web3-core-subscriptions": "1.4.0",
+    "web3-eth-abi": "1.4.0",
+    "web3-eth-accounts": "1.4.0",
+    "web3-eth-contract": "1.4.0",
+    "web3-eth-ens": "1.4.0",
+    "web3-eth": "1.4.0",
+    "web3-providers-ipc": "1.4.0",
+    "web3-providers-ws": "1.4.0",
+    "node-fetch": "2.6.1",
+    "yargs": "13.3.2",
+    "yargs-parser": "13.1.2",
+    "minimist": "1.2.5",
+    "mkdirp": "0.5.5"
+  }
 }
