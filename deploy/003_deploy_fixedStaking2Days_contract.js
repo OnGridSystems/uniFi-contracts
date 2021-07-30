@@ -1,11 +1,10 @@
 const contractName = "FixedStaking60Days"
-const UniFiAddress = process.env.UniFiAddress
 
 module.exports = async function ({ getNamedAccounts, deployments }) {
   const { deploy, execute } = deployments
   const { deployer } = await getNamedAccounts()
 
-  const token = UniFiAddress || (await ethers.getContract("UniFi")).address
+  const token = (await ethers.getContract("UniFi")).address
   const stakeDurationDays = 60
   const rewardRate = 450
   const earlyUnstakeFee = 450
@@ -31,6 +30,4 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
 }
 
 module.exports.tags = [contractName]
-if (!UniFiAddress) {
-  module.exports.dependencies = ["UniFiToken"]
-}
+module.exports.dependencies = ["UniFiToken"]

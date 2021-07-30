@@ -10,6 +10,7 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     from: deployer,
     log: true,
     args: [name, symbol, toAddress],
+    skipIfAlreadyDeployed: true
   })
 }
 

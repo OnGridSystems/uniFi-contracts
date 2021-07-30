@@ -54,29 +54,13 @@ module.exports = {
       tags: ["test", "local"],
     },
 
-    "mainnet-fork": {
-      url: "http://localhost:8545",
-      accounts,
-      chainId: 1,
-      live: true,
-      saveDeployments: true,
-    },
-
-    "matic-fork": {
-      url: "http://localhost:8545",
-      accounts,
-      chainId: 137,
-      live: true,
-      saveDeployments: true,
-    },
-
     mainnet: {
       url: `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts,
       chainId: 1,
       live: true,
       saveDeployments: true,
-      gasPrice: 120 * 1000000000,
+      gasPrice: 35 * 1000000000,
     },
 
     matic: {
@@ -85,6 +69,7 @@ module.exports = {
       chainId: 137,
       live: true,
       saveDeployments: true,
+      gasPrice: 1000000000,
     },
 
     rinkeby: {
