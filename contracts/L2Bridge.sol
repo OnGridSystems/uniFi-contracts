@@ -33,9 +33,15 @@ contract L2Bridge is AccessControl {
 
     bytes32 public constant ORACLE_ROLE = keccak256("ORACLE_ROLE");
 
-    event Burn(address owner, uint256 amount);
+    event WithdrawalInitiated(
+        address l1Token,
+        address indexed _from,
+        address indexed _to,
+        uint256 _amount
+    );
+
     event DepositFinalized(
-        IERC20 indexed l1Token,
+        address indexed l1Token,
         string indexed _l1Tx,
         address indexed _to,
         uint256 _amount
@@ -64,7 +70,7 @@ contract L2Bridge is AccessControl {
         require(_to != address(0), "Token cannot be the zero address");
 
         l2Token.mint(_to, _amount);
-        emit DepositFinalized(l1Token, _l1Tx, _to, _amount);
+        emit DepositFinalized(address(l1Token), _l1Tx, _to, _amount);
     }
 
 
@@ -77,6 +83,6 @@ contract L2Bridge is AccessControl {
         require(_amount > 0, "Cannot burn 0 Tokens");
 
         l2Token.burn(_amount);
-        emit Burn(msg.sender, _amount);
+        emit WithdrawalInitiated(address(l1Token), msg.sender, _to, _amount);
     }
 }
