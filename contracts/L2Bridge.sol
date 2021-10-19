@@ -25,17 +25,27 @@ interface IERC20Bridged is IERC20 {
 contract L2Bridge is AccessControl {
     using SafeMath for uint256;
 
-    // L2 mintable + burnable token that acts as a twin of L2 asset
-    IERC20Bridged public token;
+    // Original token on L1 network (Ethereum mainnet #1)
+    IERC20 public l1Token;
+
+    // L2 mintable + burnable token that acts as a twin of L1 asset
+    IERC20Bridged public l2Token;
 
     bytes32 public constant ORACLE_ROLE = keccak256("ORACLE_ROLE");
 
     event Burn(address owner, uint256 amount);
-    event Mint(address account, uint256 amount);
+    event DepositFinalized(
+        IERC20 indexed l1Token,
+        string indexed _l1Tx,
+        address indexed _to,
+        uint256 _amount
+    );
 
-    constructor(IERC20Bridged _token) {
-        require(address(_token) != address(0), "Token cannot be the zero address");
-        token = _token;
+    constructor(IERC20 _l1Token, IERC20Bridged _l2Token) {
+        require(address(_l1Token) != address(0), "ZERO_TOKEN");
+        require(address(_l2Token) != address(0), "ZERO_TOKEN");
+        l1Token = _l1Token;
+        l2Token = _l2Token;
         _setupRole(ORACLE_ROLE, msg.sender);
     }
 
@@ -43,18 +53,18 @@ contract L2Bridge is AccessControl {
      * @notice Finalizes a deposit from L1 to L2; callable only by ORACLE_ROLE
      * @param _to L2 address of destination
      * @param _amount Token amount being deposited
-     * @param _tx Tx hash of `L1Bridge.outboundTransfer` on L1 side
+     * @param _l1Tx Tx hash of `L1Bridge.outboundTransfer` on L1 side
      */
     function finalizeInboundTransfer(
         address _to,
-        uint256 _amount,
-        string memory _tx
+        string memory _l1Tx,
+        uint256 _amount
     ) external onlyRole(ORACLE_ROLE) {
         require(_amount > 0, "Cannot mint 0 Tokens");
         require(_to != address(0), "Token cannot be the zero address");
 
-        token.mint(_to, _amount);
-        emit Mint(_to, _amount);
+        l2Token.mint(_to, _amount);
+        emit DepositFinalized(l1Token, _l1Tx, _to, _amount);
     }
 
 
@@ -66,7 +76,7 @@ contract L2Bridge is AccessControl {
     function outboundTransfer(address _to, uint256 _amount) external {
         require(_amount > 0, "Cannot burn 0 Tokens");
 
-        token.burn(_amount);
+        l2Token.burn(_amount);
         emit Burn(msg.sender, _amount);
     }
 }

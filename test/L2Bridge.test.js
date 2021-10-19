@@ -6,11 +6,13 @@ describe("L2Bridge", function () {
     this.signers = await ethers.getSigners()
     this.owner = this.signers[0]
     this.account1 = this.signers[1]
+    // code on L1 is not callable directly, so we take just random address
+    this.l1Token = this.signers[2] 
 
     this.dao1TokenFactory = await ethers.getContractFactory("DAO1")
     this.dao1Token = await this.dao1TokenFactory.deploy("DAO1", "DAO1", this.owner.address)
     this.bridgeFactory = await ethers.getContractFactory("L2Bridge")
-    this.bridge = await this.bridgeFactory.deploy(this.dao1Token.address)
+    this.bridge = await this.bridgeFactory.deploy(this.l1Token.address, this.dao1Token.address)
   })
 
   it("should be deployed", async function () {
