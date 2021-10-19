@@ -28,8 +28,6 @@ contract L2Bridge is AccessControl {
     // L2 mintable + burnable token that acts as a twin of L2 asset
     IERC20Bridged public token;
 
-    mapping(address => uint256) public balances;
-
     bytes32 public constant ORACLE_ROLE = keccak256("ORACLE_ROLE");
 
     event Burn(address owner, uint256 amount);
@@ -55,8 +53,6 @@ contract L2Bridge is AccessControl {
         require(_amount > 0, "Cannot mint 0 Tokens");
         require(_to != address(0), "Token cannot be the zero address");
 
-        balances[_to] = balances[_to].add(_amount);
-
         token.mint(_to, _amount);
         emit Mint(_to, _amount);
     }
@@ -69,9 +65,6 @@ contract L2Bridge is AccessControl {
      */
     function outboundTransfer(address _to, uint256 _amount) external {
         require(_amount > 0, "Cannot burn 0 Tokens");
-        require(balances[msg.sender] >= _amount, "Invalid amount to burn");
-
-        balances[msg.sender] = balances[msg.sender].sub(_amount);
 
         token.burn(_amount);
         emit Burn(msg.sender, _amount);
