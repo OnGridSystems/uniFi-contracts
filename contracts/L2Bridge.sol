@@ -4,9 +4,9 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "./DAO1MintableToken.sol";
+import "./DAO1BridgedToken.sol";
 
-contract L2Bridge is AccessControl, DAO1MintableToken {
+contract L2Bridge is AccessControl {
     using SafeMath for uint256;
     address public token;
 
@@ -33,7 +33,7 @@ contract L2Bridge is AccessControl, DAO1MintableToken {
 
         balances[_to] = balances[_to].add(_amount);
 
-        require(DAO1MintableToken(token).mint(_to, _amount), "Mint failed");
+        require(DAO1BridgedToken(token).mint(_to, _amount), "Mint failed");
         emit Mint(_to, _amount);
     }
 
@@ -43,7 +43,7 @@ contract L2Bridge is AccessControl, DAO1MintableToken {
 
         balances[msg.sender] = balances[msg.sender].sub(_amount);
 
-        require(DAO1MintableToken(token).burn(msg.sender, _amount), "Burn failed");
+        require(DAO1BridgedToken(token).burn(msg.sender, _amount), "Burn failed");
         emit Burn(msg.sender, _amount);
     }
 }
