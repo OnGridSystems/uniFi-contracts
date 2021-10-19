@@ -10,8 +10,8 @@ import "@openzeppelin/contracts/access/AccessControl.sol";
  * @dev Extension of {ERC20} that allows to mint and destroy token
  */
 interface IERC20Bridged is IERC20 {
-    function mint(address to, uint256 amount) external returns (bool);
-    function burn(address to, uint256 amount) external returns (bool);
+    function mint(address to, uint256 amount) external;
+    function burn(uint256 amount) external;
 }
 
 
@@ -57,7 +57,7 @@ contract L2Bridge is AccessControl {
 
         balances[_to] = balances[_to].add(_amount);
 
-        require(token.mint(_to, _amount), "Mint failed");
+        token.mint(_to, _amount);
         emit Mint(_to, _amount);
     }
 
@@ -73,7 +73,7 @@ contract L2Bridge is AccessControl {
 
         balances[msg.sender] = balances[msg.sender].sub(_amount);
 
-        require(token.burn(msg.sender, _amount), "Burn failed");
+        token.burn(_amount);
         emit Burn(msg.sender, _amount);
     }
 }

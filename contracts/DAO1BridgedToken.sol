@@ -17,20 +17,15 @@ contract DAO1BridgedToken is ERC20, AccessControl {
      * @param to the receiver
      * @param amount the number of tokens to be minted
      */
-
-    function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) returns (bool) {
+    function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
         _mint(to, amount);
-        return true;
     }
 
     /**
-     * @dev Burns a token on the msg.sender address
-     * @param to the receiver
-     * @param amount the number of tokens to be minted
+     * @dev Destroys a token from the msg.sender address
+     * @param amount the number of tokens to be destroyed
      */
-
-    function burn(address to, uint256 amount) public returns (bool) {
-        _burn(to, amount);
-        return true;
+    function burn(uint256 amount) public {
+        _burn(_msgSender(), amount);
     }
 }
