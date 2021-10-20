@@ -11,20 +11,20 @@ describe("L2Bridge", function () {
     this.oracle = this.signers[3]
     this.holder = this.signers[4]
 
-    this.dao1TokenFactory = await ethers.getContractFactory("DAO1BridgedToken")
-    this.bridgeFactory = await ethers.getContractFactory("L2Bridge")
+    this.L2TokenFactory = await ethers.getContractFactory("L2BridgedToken")
+    this.L2BridgeFactory = await ethers.getContractFactory("L2Bridge")
   })
 
   beforeEach(async function () {
-    this.dao1Token = await this.dao1TokenFactory.deploy("DAO1", "DAO1")
-    this.bridge = await this.bridgeFactory.deploy(this.l1Token.address, this.dao1Token.address)
-    const MINTER_ROLE = await this.dao1Token.MINTER_ROLE()
-    await this.dao1Token.grantRole(MINTER_ROLE, this.bridge.address)
+    this.token = await this.L2TokenFactory.deploy("DAO1", "DAO1")
+    this.bridge = await this.L2BridgeFactory.deploy(this.l1Token.address, this.token.address)
+    const BRIDGE_ROLE = await this.token.BRIDGE_ROLE()
+    await this.token.grantRole(BRIDGE_ROLE, this.bridge.address)
   })
 
   it("should be deployed", async function () {
     expect(await this.bridge.deployed(), true)
-    expect(await this.dao1Token.deployed(), true)
+    expect(await this.token.deployed(), true)
   })
 
   it("l1 token has proper name and symbol", async function () {

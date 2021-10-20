@@ -5,8 +5,13 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract DAO1BridgedToken is ERC20, AccessControl {
-    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+/**
+ * @title Layer 2 token contract (twin of Layer1 token locked on mainnet's bridge)
+ * @dev This contract deployed on secondary network and minted and burnt by L2 bridge
+ * @author DAO1
+ **/
+contract L2BridgedToken is ERC20, AccessControl {
+    bytes32 public constant BRIDGE_ROLE = keccak256("BRIDGE_ROLE");
 
     /**
      * @dev Sets the values for {name} and {symbol}.
@@ -21,7 +26,7 @@ contract DAO1BridgedToken is ERC20, AccessControl {
      * @param to the receiver
      * @param amount the number of tokens to be minted
      */
-    function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
+    function mint(address to, uint256 amount) public onlyRole(BRIDGE_ROLE) {
         _mint(to, amount);
     }
 

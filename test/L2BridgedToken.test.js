@@ -1,15 +1,19 @@
 const { expect } = require("chai")
 const { parseEther } = ethers.utils
 
-describe("DAO1 bridged token", function () {
+describe("L2 bridged token", function () {
   beforeEach(async function () {
     this.signers = await ethers.getSigners()
     this.owner = this.signers[0]
     this.account1 = this.signers[1]
     this.account2 = this.signers[2]
+    this.bridge = this.signers[3]
 
-    this.contract = await ethers.getContractFactory("DAO1BridgedToken")
-    this.token = await this.contract.deploy()
+    this.contract = await ethers.getContractFactory("L2BridgedToken")
+    this.token = await this.contract.deploy("DAO1", "DAO1")
+
+    const BRIDGE_ROLE = await this.token.BRIDGE_ROLE()
+    await this.token.grantRole(BRIDGE_ROLE, this.bridge.address)
   })
 
   it("has a name", async function () {
@@ -36,12 +40,12 @@ describe("DAO1 bridged token", function () {
     const amount = parseEther("500000")
     const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
-    describe("Mint tokens", function () {
+    describe("Bridge mints initial supply", function () {
       beforeEach(async function () {
-        await this.token.connect(this.owner).mint(this.owner.address, amount)
+        await this.token.connect(this.bridge).mint(this.owner.address, amount)
       })
 
-      it("owner's balance increased", async function () {
+      it("balance increased", async function () {
         expect(await this.token.balanceOf(this.owner.address)).to.equal(amount)
       })
 
@@ -50,7 +54,7 @@ describe("DAO1 bridged token", function () {
       })
 
       it("reverts if ZERO_ADDRESS", async function () {
-        await expect(this.token.connect(this.owner).mint(ZERO_ADDRESS, amount)).to.be.revertedWith("ERC20: mint to the zero address")
+        await expect(this.token.connect(this.bridge).mint(ZERO_ADDRESS, amount)).to.be.revertedWith("ERC20: mint to the zero address")
       })
 
       describe("Basic transfers", function () {
