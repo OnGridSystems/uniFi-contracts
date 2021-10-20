@@ -58,5 +58,20 @@ describe("L2Bridge", function () {
     it("l2token balance of holder increased", async function () {
       expect(await this.token.balanceOf(this.holder.address)).to.equal("123456")
     })
+
+    describe("token goes back to L1 (holder calls outboundTransfer)", function () {
+      beforeEach(async function () {
+        await this.token.connect(this.holder).approve(this.bridge.address, "123")
+        await this.bridge.connect(this.holder).outboundTransfer(this.holder.address, "123")
+      })
+
+      it("l2token supply decreased", async function () {
+        expect(await this.token.totalSupply()).to.equal("123333") // 123456 - 123
+      })
+
+      it("l2token balance of holder decreased", async function () {
+        expect(await this.token.balanceOf(this.holder.address)).to.equal("123333") // 123456 - 123
+      })
+    })
   })
 })

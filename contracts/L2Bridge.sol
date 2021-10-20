@@ -82,7 +82,7 @@ contract L2Bridge is AccessControl {
      */
     function outboundTransfer(address _to, uint256 _amount) external {
         require(_amount > 0, "Cannot burn 0 Tokens");
-
+        l2Token.transferFrom(msg.sender, address(this), _amount);
         l2Token.burn(_amount);
         emit WithdrawalInitiated(address(l1Token), msg.sender, _to, _amount);
     }
