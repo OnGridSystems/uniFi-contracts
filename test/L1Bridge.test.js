@@ -57,16 +57,28 @@ describe("L1 Bridge", function () {
     })
 
     it("impossible to withdraw 0 tokens", async function () {
-      await expect(this.bridge.withdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens")
+      await expect(
+        this.bridge.finalizeInboundTransfer(this.owner.address, "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2", 0)
+      ).to.be.revertedWith("NO_AMOUNT")
     })
 
     it("impossible to withdraw more than balance", async function () {
-      await expect(this.bridge.withdraw(parseEther("1000000"))).to.be.revertedWith("Invalid amount to withdraw")
+      await expect(
+        this.bridge.finalizeInboundTransfer(
+          this.owner.address,
+          "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2",
+          parseEther("1000000")
+        )
+      ).to.be.revertedWith("NOT_ENOUGH_BALANCE")
     })
 
     describe("then first holder withdraws", function () {
       beforeEach(async function () {
-        expect(await this.bridge.withdraw(parseEther("300000")), true)
+        await this.bridge.finalizeInboundTransfer(
+          this.owner.address,
+          "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2",
+          parseEther("300000")
+        )
       })
       it("token balance is correct", async function () {
         const depositBalance = await this.token.balanceOf(this.bridge.address)
@@ -95,7 +107,11 @@ describe("L1 Bridge", function () {
 
       describe("then first holder withdraws", function () {
         beforeEach(async function () {
-          expect(await this.bridge.withdraw(parseEther("300000")), true)
+          await this.bridge.finalizeInboundTransfer(
+            this.owner.address,
+            "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2",
+            parseEther("300000")
+          )
         })
         it("token balance is correct", async function () {
           const depositBalance = await this.token.balanceOf(this.bridge.address)

@@ -17,7 +17,7 @@ contract L1Bridge {
     mapping(address => uint256) public balances;
 
     event DepositInitiated(address indexed l1Token, address indexed _from, address indexed _to, uint256 _amount);
-    event Withdraw(address owner, uint256 amount);
+    event WithdrawalFinalized(address indexed l1Token, string indexed _l2Tx, address indexed _to, uint256 _amount);
 
     constructor(IERC20 _l1Token, IERC20 _l2Token) {
         require(address(_l1Token) != address(0), "ZERO_TOKEN");
@@ -40,22 +40,21 @@ contract L1Bridge {
     }
 
     /**
-     * @dev Withdraw the "quantity" of reserved DAO1 tokens, reducing the balance of tokens on the contract.
-     * @param _amount Withdraw amount
-     * Requirements:
-     *
-     * - amount cannot be zero.
-     * - the caller must have a balance on contract of at least `amount`.
+     * @notice Finalizes withdrawal initiated on L2. callable only by ORACLE_ROLE
+     * @param _to L1 address of destination
+     * @param _amount Token amount being deposited
+     * @param _l2Tx Tx hash of `L2Bridge.outboundTransfer` on L2 side
      */
-
-    function withdraw(uint256 _amount) public payable {
-        require(_amount > 0, "Cannot withdraw 0 Tokens!");
-
-        require(balances[msg.sender] >= _amount, "Invalid amount to withdraw");
-
+    function finalizeInboundTransfer(
+        address _to,
+        string memory _l2Tx,
+        uint256 _amount
+    ) external {
+        require(_amount > 0, "NO_AMOUNT");
+        require(_to != address(0), "NO_RECEIVER");
+        require(balances[msg.sender] >= _amount, "NOT_ENOUGH_BALANCE");
         balances[msg.sender] = balances[msg.sender].sub(_amount);
-
-        require(l1Token.transfer(msg.sender, _amount), "Could not transfer tokens.");
-        emit Withdraw(msg.sender, _amount);
+        require(l1Token.transfer(_to, _amount), "TRANSFER_FAILED");
+        emit WithdrawalFinalized(address(l1Token), _l2Tx, _to, _amount);
     }
 }
