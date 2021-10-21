@@ -1,12 +1,22 @@
 module.exports = async function ({ getNamedAccounts, deployments }) {
   const { deploy, execute } = deployments
   const { deployer } = await getNamedAccounts()
+  const DAO1 = await ethers.getContract("DAO1")
+  const L2BridgedToken = await ethers.getContract("L2BridgedToken")
+  const l1token = DAO1.address
+  const l2token = L2BridgedToken.address
 
-  const bridge = await ethers.getContract("L1Bridge")
+  await deploy("L2Bridge", {
+    from: deployer,
+    log: true,
+    args: [l1token, l2token],
+  })
+
+  const bridge = await ethers.getContract("L2Bridge")
   const ORACLE_ROLE = await bridge.ORACLE_ROLE()
 
   await execute(
-    "L1Bridge",
+    "L2Bridge",
     {
       from: deployer,
       log: true,
@@ -23,5 +33,5 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
   }
 }
 
-module.exports.tags = ["L1BridgeConfig"]
-module.exports.dependencies = ["L1Bridge"]
+module.exports.tags = ["L2Bridge"]
+module.exports.dependencies = ["L2BridgedToken","DAO1Token"]
