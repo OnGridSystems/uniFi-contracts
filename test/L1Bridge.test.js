@@ -9,6 +9,7 @@ describe("L1 Bridge", function () {
     // code on L2 is not callable directly, so we take just random address
     this.l2Token = this.signers[2]
     this.l2holder = this.signers[3]
+    this.oracle = this.signers[4]
 
     this.TokenFactory = await ethers.getContractFactory("DAO1")
     this.L1BridgeFactory = await ethers.getContractFactory("L1Bridge")
@@ -17,6 +18,8 @@ describe("L1 Bridge", function () {
   beforeEach(async function () {
     this.token = await this.TokenFactory.deploy("DAO1", "DAO1", this.owner.address)
     this.bridge = await this.L1BridgeFactory.deploy(this.token.address, this.l2Token.address)
+    const ORACLE_ROLE = await this.bridge.ORACLE_ROLE()
+    await this.bridge.grantRole(ORACLE_ROLE, this.oracle.address)
   })
 
   it("should be deployed", async function () {
@@ -58,27 +61,33 @@ describe("L1 Bridge", function () {
 
     it("impossible to withdraw 0 tokens", async function () {
       await expect(
-        this.bridge.finalizeInboundTransfer(this.owner.address, "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2", 0)
+        this.bridge
+          .connect(this.oracle)
+          .finalizeInboundTransfer(this.owner.address, "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2", 0)
       ).to.be.revertedWith("NO_AMOUNT")
     })
 
     it("impossible to withdraw more than balance", async function () {
       await expect(
-        this.bridge.finalizeInboundTransfer(
-          this.owner.address,
-          "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2",
-          parseEther("1000000")
-        )
+        this.bridge
+          .connect(this.oracle)
+          .finalizeInboundTransfer(
+            this.owner.address,
+            "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2",
+            parseEther("1000000")
+          )
       ).to.be.revertedWith("NOT_ENOUGH_BALANCE")
     })
 
-    describe("then first holder withdraws", function () {
+    describe("then first holder withdraws (oracle calls finalizeInboundTransfer about it)", function () {
       beforeEach(async function () {
-        await this.bridge.finalizeInboundTransfer(
-          this.owner.address,
-          "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2",
-          parseEther("300000")
-        )
+        await this.bridge
+          .connect(this.oracle)
+          .finalizeInboundTransfer(
+            this.owner.address,
+            "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2",
+            parseEther("300000")
+          )
       })
       it("token balance is correct", async function () {
         const depositBalance = await this.token.balanceOf(this.bridge.address)
@@ -107,11 +116,13 @@ describe("L1 Bridge", function () {
 
       describe("then first holder withdraws", function () {
         beforeEach(async function () {
-          await this.bridge.finalizeInboundTransfer(
-            this.owner.address,
-            "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2",
-            parseEther("300000")
-          )
+          await this.bridge
+            .connect(this.oracle)
+            .finalizeInboundTransfer(
+              this.owner.address,
+              "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2",
+              parseEther("300000")
+            )
         })
         it("token balance is correct", async function () {
           const depositBalance = await this.token.balanceOf(this.bridge.address)

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
 pragma solidity ^0.8.0;
 
+import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
-contract L1Bridge {
+contract L1Bridge is AccessControl {
     using SafeMath for uint256;
 
     // Original token on L1 network (Ethereum mainnet #1)
@@ -16,6 +17,8 @@ contract L1Bridge {
     // L1Token amounts locked on the bridge
     mapping(address => uint256) public balances;
 
+    bytes32 public constant ORACLE_ROLE = keccak256("ORACLE_ROLE");
+
     event DepositInitiated(address indexed l1Token, address indexed _from, address indexed _to, uint256 _amount);
     event WithdrawalFinalized(address indexed l1Token, string indexed _l2Tx, address indexed _to, uint256 _amount);
 
@@ -24,6 +27,7 @@ contract L1Bridge {
         require(address(_l2Token) != address(0), "ZERO_TOKEN");
         l1Token = _l1Token;
         l2Token = _l2Token;
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /**
@@ -49,11 +53,11 @@ contract L1Bridge {
         address _to,
         string memory _l2Tx,
         uint256 _amount
-    ) external {
+    ) external onlyRole(ORACLE_ROLE) {
         require(_amount > 0, "NO_AMOUNT");
         require(_to != address(0), "NO_RECEIVER");
-        require(balances[msg.sender] >= _amount, "NOT_ENOUGH_BALANCE");
-        balances[msg.sender] = balances[msg.sender].sub(_amount);
+        require(balances[_to] >= _amount, "NOT_ENOUGH_BALANCE");
+        balances[_to] = balances[_to].sub(_amount);
         require(l1Token.transfer(_to, _amount), "TRANSFER_FAILED");
         emit WithdrawalFinalized(address(l1Token), _l2Tx, _to, _amount);
     }
