@@ -6,16 +6,24 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 
 contract L1Bridge {
     using SafeMath for uint256;
-    address public token;
 
+    // Original token on L1 network (Ethereum mainnet #1)
+    IERC20 public l1Token;
+
+    // L2 mintable + burnable token that acts as a twin of L1 token on L2
+    IERC20 public l2Token;
+
+    // L1Token amounts locked on the bridge
     mapping(address => uint256) public balances;
 
     event Deposit(address owner, uint256 amount);
     event Withdraw(address owner, uint256 amount);
 
-    constructor(address _token) {
-        require(_token != address(0), "Token cannot be the zero address");
-        token = _token;
+    constructor(IERC20 _l1Token, IERC20 _l2Token) {
+        require(address(_l1Token) != address(0), "ZERO_TOKEN");
+        require(address(_l2Token) != address(0), "ZERO_TOKEN");
+        l1Token = _l1Token;
+        l2Token = _l2Token;
     }
 
     /**
@@ -34,7 +42,7 @@ contract L1Bridge {
 
         balances[msg.sender] = balances[msg.sender].add(_amount);
 
-        require(IERC20(token).transferFrom(msg.sender, address(this), _amount), "Insufficient Token Allowance");
+        require(l1Token.transferFrom(msg.sender, address(this), _amount), "Insufficient Token Allowance");
         emit Deposit(msg.sender, _amount);
     }
 
@@ -54,7 +62,7 @@ contract L1Bridge {
 
         balances[msg.sender] = balances[msg.sender].sub(_amount);
 
-        require(IERC20(token).transfer(msg.sender, _amount), "Could not transfer tokens.");
+        require(l1Token.transfer(msg.sender, _amount), "Could not transfer tokens.");
         emit Withdraw(msg.sender, _amount);
     }
 }
