@@ -2,6 +2,7 @@ require("@nomiclabs/hardhat-waffle")
 require("hardhat-deploy")
 require("hardhat-deploy-ethers")
 require("solidity-coverage")
+require("@nomiclabs/hardhat-etherscan");
 
 /**
  * @type import('hardhat/config').HardhatUserConfig
@@ -99,4 +100,8 @@ module.exports = {
       tags: ["staging"],
     },
   },
+
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_KEY
+  }
 }
