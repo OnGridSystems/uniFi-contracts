@@ -9,7 +9,7 @@ describe("FixedStaking", function () {
     this.bob = this.signers[1]
     this.token = this.signers[2]
 
-    this.contract = await ethers.getContractFactory("FixedStaking")
+    this.contract = await ethers.getContractFactory("FixedStakingMock")
   })
 
   describe("30 days, 1.55% interest, 1.55% penalty", function () {
