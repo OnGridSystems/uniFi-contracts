@@ -1,6 +1,8 @@
 const { ethers } = require("hardhat")
 const { expect } = require("chai")
-const { BN } = require("bn.js")
+const { BigNumber } = require("ethers")
+
+const days = BigNumber.from("60").mul("60").mul("24")
 
 describe("FixedStaking", function () {
   before(async function () {
@@ -16,6 +18,7 @@ describe("FixedStaking", function () {
     beforeEach(async function () {
       this.pool = await this.contract.deploy(this.token.address, 30, 155, 155)
       await this.pool.deployed()
+      await this.pool.setCurrentTime(1700000000)
     })
 
     it("initial states", async function () {
@@ -50,6 +53,45 @@ describe("FixedStaking", function () {
         expect((await this.pool.stakes(this.alice.address, 1)).claimed).to.equal("0")
       })
 
+      describe("15 days (half) passed", function () {
+        beforeEach(async function () {
+          await this.pool.increaseCurrentTime(days.mul("15"))
+        })
+
+        it("tests will be here", async function () {
+          expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
+          expect((await this.pool.stakes(this.alice.address, 0)).active).to.equal(true)
+          expect((await this.pool.stakes(this.alice.address, 0)).stakedAmount).to.equal("123")
+          expect((await this.pool.stakes(this.alice.address, 0)).claimed).to.equal("0")
+        })
+
+        describe("+ 15 days (entire interval) passed", function () {
+          beforeEach(async function () {
+            await this.pool.increaseCurrentTime(days.mul("15"))
+          })
+
+          it("tests will be here", async function () {
+            expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
+            expect((await this.pool.stakes(this.alice.address, 0)).active).to.equal(true)
+            expect((await this.pool.stakes(this.alice.address, 0)).stakedAmount).to.equal("123")
+            expect((await this.pool.stakes(this.alice.address, 0)).claimed).to.equal("0")
+          })
+
+          describe("+ 1 day passed (all expired))", function () {
+            beforeEach(async function () {
+              await this.pool.increaseCurrentTime(days.mul("1"))
+            })
+
+            it("tests will be here", async function () {
+              expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
+              expect((await this.pool.stakes(this.alice.address, 0)).active).to.equal(true)
+              expect((await this.pool.stakes(this.alice.address, 0)).stakedAmount).to.equal("123")
+              expect((await this.pool.stakes(this.alice.address, 0)).claimed).to.equal("0")
+            })
+          })
+        })
+      })
+
       describe("then Bob deposited", function () {
         beforeEach(async function () {
           await this.pool.connect(this.bob).stake(345)
@@ -69,6 +111,7 @@ describe("FixedStaking", function () {
     beforeEach(async function () {
       this.pool = await this.contract.deploy(this.token.address, 90, 1105, 1105)
       await this.pool.deployed()
+      await this.pool.setCurrentTime(1700000000)
     })
 
     it("initial states", async function () {
