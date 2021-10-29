@@ -1,7 +1,6 @@
-const { expect } = require("chai");
+const { expect } = require("chai")
 
-describe("DAO1 token", function() {
-
+describe("DAO1 token", function () {
   const totalSupplyAmount = ethers.utils.parseEther("3600000")
 
   beforeEach(async function () {
@@ -13,35 +12,33 @@ describe("DAO1 token", function() {
 
     this.contract = await ethers.getContractFactory("DAO1")
     this.token = await this.contract.deploy("DAO1", "DAO1", this.owner.address)
-  });
+  })
 
   it("has a name", async function () {
     expect(await this.token.name()).to.equal("DAO1")
-  });
+  })
 
   it("has a symbol", async function () {
     expect(await this.token.symbol()).to.equal("DAO1")
-  });
+  })
 
   it("has 18 decimals", async function () {
     expect(await this.token.decimals()).to.equal(18)
-  });
+  })
 
   it("returns the total amount of tokens", async function () {
     expect(await this.token.totalSupply()).to.equal(totalSupplyAmount)
-  });
+  })
 
   it("is the owner of the token", async function () {
     expect(await this.token.owner()).to.equal(this.owner.address)
-  });
+  })
 
   it("returns the balance of owner", async function () {
-    expect(await this.token.balanceOf(this.owner.address))
-      .to.equal(totalSupplyAmount)
-  });
+    expect(await this.token.balanceOf(this.owner.address)).to.equal(totalSupplyAmount)
+  })
 
   describe("Checking token methods", function () {
-
     const amount = ethers.utils.parseEther("1")
     const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
@@ -49,14 +46,12 @@ describe("DAO1 token", function() {
 
       beforeEach(async function () {
         ownerDAO1Balance = await this.token.balanceOf(this.owner.address)
-        transfer = await this.token.connect(this.owner)
-          .transfer(this.account1.address, amount)
-      });
+        transfer = await this.token.connect(this.owner).transfer(this.account1.address, amount)
+      })
 
       it("emits event Transfer", async function () {
-        await expect(transfer).to.emit(this.token, "Transfer")
-                .withArgs(this.owner.address, this.account1.address, amount)
-      });
+        await expect(transfer).to.emit(this.token, "Transfer").withArgs(this.owner.address, this.account1.address, amount)
+      })
 
       it("spender's balance decreased", async function () {
         expect(await this.token.balanceOf(this.owner.address))
@@ -65,27 +60,24 @@ describe("DAO1 token", function() {
 
       it("receiver's balance increased", async function () {
         expect(await this.token.balanceOf(this.account1.address)).to.equal(amount)
-      });
-
-      it("reverts if account1 has not enough balance", async function () {
-        await expect(this.token.connect(this.account1)
-                .transfer(this.account2.address, amount.add(1)))
-                  .to.be.revertedWith("ERC20: transfer amount exceeds balance")
       })
 
-    });
+      it("reverts if account1 has not enough balance", async function () {
+        await expect(this.token.connect(this.account1).transfer(this.account2.address, amount.add(1))).to.be.revertedWith(
+          "ERC20: transfer amount exceeds balance"
+        )
+      })
+    })
 
     describe("Approve", function () {
 
       beforeEach(async function () {
-        approve = await this.token.connect(this.owner)
-                          .approve(this.account1.address, amount)
-      });
+        approve = await this.token.connect(this.owner).approve(this.account1.address, amount)
+      })
 
       it("emits event Approval", async function () {
-        await expect(approve).to.emit(this.token, "Approval")
-                .withArgs(this.owner.address, this.account1.address, amount)
-      });
+        await expect(approve).to.emit(this.token, "Approval").withArgs(this.owner.address, this.account1.address, amount)
+      })
 
       it("allowance to account1", async function () {
         expect(await this.token.allowance(this.owner.address, this.account1.address))
@@ -101,18 +93,12 @@ describe("DAO1 token", function() {
       describe("transferFrom", function () {
         beforeEach(async function () {
           ownerDAO1Balance = await this.token.balanceOf(this.owner.address)
-          transferFrom = await this.token.connect(this.account1)
-                                .transferFrom(
-                                  this.owner.address,
-                                  this.account2.address,
-                                  amount
-                                )
-        });
+          transferFrom = await this.token.connect(this.account1).transferFrom(this.owner.address, this.account2.address, amount)
+        })
 
         it("emits event Transfer", async function () {
-          await expect(transferFrom).to.emit(this.token, "Transfer")
-                  .withArgs(this.owner.address, this.account2.address, amount)
-        });
+          await expect(transferFrom).to.emit(this.token, "Transfer").withArgs(this.owner.address, this.account2.address, amount)
+        })
 
         it("emits event Approval (allowance decreased)", async function () {
           await expect(transferFrom).to.emit(this.token, "Approval")
@@ -131,39 +117,29 @@ describe("DAO1 token", function() {
 
         it("check account2 balance after transfer", async function () {
           expect(await this.token.balanceOf(this.account2.address)).to.equal(amount)
-        });
+        })
 
         it("reverts if account1 has not enough allowance", async function () {
+          transferFrom = this.token.connect(this.account1).transferFrom(this.owner.address, this.account2.address, amount.add(1))
 
-          transferFrom = this.token.connect(this.account1)
-                          .transferFrom(
-                            this.owner.address,
-                            this.account2.address,
-                            amount.add(1)
-                          )
-
-          await expect(transferFrom)
-                  .to.be.revertedWith("ERC20: transfer amount exceeds allowance")
-        });
-      });
-    });
+          await expect(transferFrom).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
+        })
+      })
+    })
 
     describe("transferOwnership", function () {
 
       beforeEach(async function () {
-        transferOwnership = await this.token.connect(this.owner)
-                              .transferOwnership(this.account1.address)
-      });
+        transferOwnership = await this.token.connect(this.owner).transferOwnership(this.account1.address)
+      })
 
       it("emits event OwnershipTransferred", async function () {
-        await expect(transferOwnership).to.emit(this.token, "OwnershipTransferred")
-                .withArgs(this.owner.address, this.account1.address)
-      });
-
+        await expect(transferOwnership).to.emit(this.token, "OwnershipTransferred").withArgs(this.owner.address, this.account1.address)
+      })
 
       it("owner changed", async function () {
         expect(await this.token.owner()).to.equal(this.account1.address)
-      });
+      })
 
       it("reverts if newOwner is ZERO_ADDRESS", async function () {
 
@@ -178,13 +154,11 @@ describe("DAO1 token", function() {
 
       beforeEach(async function () {
         renounceOwnership = await this.token.connect(this.owner).renounceOwnership()
-      });
+      })
 
       it("emits event OwnershipTransferred", async function () {
-        await expect(renounceOwnership).to.emit(this.token, "OwnershipTransferred")
-                .withArgs(this.owner.address, ZERO_ADDRESS)
-      });
-
+        await expect(renounceOwnership).to.emit(this.token, "OwnershipTransferred").withArgs(this.owner.address, ZERO_ADDRESS)
+      })
 
       it("has no owner", async function () {
         expect(await this.token.owner()).to.equal(ZERO_ADDRESS)

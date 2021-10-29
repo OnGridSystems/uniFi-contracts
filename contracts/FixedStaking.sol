@@ -27,7 +27,7 @@ contract FixedStaking is Ownable {
 
     mapping(address => StakeInfo[]) public stakes;
 
-    uint256 public totalStaked;
+    uint256 public stakedTokens;
 
     // The position locking period in seconds.
     // Counted from the moment of stake deposit and expires after `stakeDuration` seconds.
@@ -37,19 +37,12 @@ contract FixedStaking is Ownable {
     // If the user withdraws before stake expiration, he pays `earlyUnstakeFee`
     uint256 public earlyUnstakeFee;
 
-    // early withdrawal fees are accounted separately
-    // and can be withdrawn by the owner using withdrawCollectedFees(address _to, uint256 amount)
-    uint256 public collectedFees;
-
     // Sum of rewards that staker will receive for his stake
     // nominated in basis points (1/10000) of staked amount
-    uint256 public rewardRate;
+    uint256 public yieldRate;
 
-    //the balance of reward tokens on the contract
-    uint256 public contractBalance;
-
-    //the balance of award tokens that are reserved for existing stakes
-    uint256 public allocatedContractBalance;
+    // Yield tokens reserved for existing stakes to pay on harvest
+    uint256 public allocatedTokens;
 
     event Stake(address indexed user, uint256 indexed stakeId, uint256 amount, uint256 startTime, uint256 endTime);
 
@@ -60,24 +53,22 @@ contract FixedStaking is Ownable {
     constructor(
         IERC20 _token,
         uint256 _stakeDurationDays,
-        uint256 _rewardRate,
+        uint256 _yieldRate,
         uint256 _earlyUnstakeFee
     ) {
         token = _token;
         stakeDurationDays = _stakeDurationDays;
-        rewardRate = _rewardRate;
+        yieldRate = _yieldRate;
         earlyUnstakeFee = _earlyUnstakeFee;
     }
 
-    function addContractBalance(uint256 amount) public onlyOwner {
-        // todo: add DAO1.transfer amount DAO-44
-        contractBalance = contractBalance.add(amount);
+    function unallocatedTokens() public view returns (uint256) {
+        return token.balanceOf(address(this)).sub(stakedTokens).sub(allocatedTokens);
     }
 
-    function takeContractBalance(uint256 amount) public onlyOwner {
-        require(contractBalance >= amount, "Amount is more than there are contractBalance!");
-        // todo: add DAO1.transfer amount DAO-44
-        contractBalance = contractBalance.sub(amount);
+    function withdrawUnallocatedTokens(address _to, uint256 _amount) public onlyOwner {
+        require(unallocatedTokens() >= _amount, "Amount is more than there are unallocatedTokens!");
+        token.safeTransfer(_to, _amount);
     }
 
     function getStakesLength(address _userAddress) public view returns (uint256) {
@@ -124,7 +115,7 @@ contract FixedStaking is Ownable {
     // Deposit user's stake
     function stake(uint256 _amount) public {
         require(stakesOpen, "stake: not open");
-        require(contractBalance >= _amount.mul(rewardRate).div(10000), "There are not enough tokens to issue a reward for this stake!");
+        require(unallocatedTokens() >= _amount.mul(yieldRate).div(10000), "stake: not enough allotted tokens to pay yield");
         token.safeTransferFrom(msg.sender, address(this), _amount);
         uint256 startTime = _now();
         uint256 endTime = _now().add(stakeDurationDays.mul(1 days));
@@ -134,14 +125,13 @@ contract FixedStaking is Ownable {
                 stakedAmount: _amount,
                 startTime: startTime,
                 endTime: endTime,
-                totalYield: _amount.mul(rewardRate).div(10000),
+                totalYield: _amount.mul(yieldRate).div(10000),
                 harvestedYield: 0,
                 lastHarvestTime: startTime
             })
         );
-        contractBalance = contractBalance.sub(_amount.mul(rewardRate).div(10000));
-        allocatedContractBalance = allocatedContractBalance.add(_amount.mul(rewardRate).div(10000));
-        totalStaked = totalStaked.add(_amount);
+        allocatedTokens = allocatedTokens.add(_amount.mul(yieldRate).div(10000));
+        stakedTokens = stakedTokens.add(_amount);
         emit Stake(msg.sender, getStakesLength(msg.sender), _amount, startTime, endTime);
     }
 
@@ -162,7 +152,7 @@ contract FixedStaking is Ownable {
         if (_now() > endTime) {
             token.safeTransfer(msg.sender, stakedAmount);
             stakes[msg.sender][_stakeId].active = false;
-            totalStaked = totalStaked.sub(stakedAmount);
+            stakedTokens = stakedTokens.sub(stakedAmount);
             early = false;
         } else {
             uint256 fee = stakedAmount.mul(earlyUnstakeFee).div(10000);
@@ -170,13 +160,11 @@ contract FixedStaking is Ownable {
             token.safeTransfer(msg.sender, amountToTransfer);
 
             uint256 newTotalYield = harvestedYield.add(harvestableYield);
-            contractBalance = contractBalance.add(totalYield.sub(newTotalYield));
-            allocatedContractBalance = allocatedContractBalance.sub(totalYield.sub(newTotalYield));
+            allocatedTokens = allocatedTokens.sub(totalYield.sub(newTotalYield));
             stakes[msg.sender][_stakeId].active = false;
             stakes[msg.sender][_stakeId].endTime = _now();
             stakes[msg.sender][_stakeId].totalYield = newTotalYield;
-            totalStaked = totalStaked.sub(stakedAmount);
-            collectedFees = collectedFees.add(fee);
+            stakedTokens = stakedTokens.sub(stakedAmount);
             early = true;
         }
 
@@ -187,16 +175,10 @@ contract FixedStaking is Ownable {
         (, , , , , uint256 harvestedYield, , uint256 harvestableYield) = getStake(msg.sender, _stakeId);
         require(harvestableYield != 0, "harvestableYield is zero");
         token.safeTransfer(msg.sender, harvestableYield);
-        allocatedContractBalance = allocatedContractBalance.sub(harvestableYield);
+        allocatedTokens = allocatedTokens.sub(harvestableYield);
         stakes[msg.sender][_stakeId].harvestedYield = harvestedYield.add(harvestableYield);
         stakes[msg.sender][_stakeId].lastHarvestTime = _now();
         emit Harvest(msg.sender, _stakeId, harvestableYield, _now());
-    }
-
-    function withdrawCollectedFees(address to, uint256 amount) public onlyOwner {
-        require(collectedFees >= amount, "Amount is more than there are collectedFees!");
-        token.safeTransfer(to, amount);
-        collectedFees = collectedFees.sub(amount);
     }
 
     // Returns block.timestamp, overridable for test purposes.
