@@ -47,6 +47,8 @@ contract FixedStaking is Ownable {
 
     event EmergencyWithdraw(address indexed user, uint256 indexed stakeId, uint256 amount);
 
+    event Harvest(address indexed user, uint256 indexed stakeId, uint256 amount,uint256 harvestTime);
+
     constructor(
         IERC20 _token,
         uint256 _stakeDurationDays,
@@ -170,7 +172,7 @@ contract FixedStaking is Ownable {
         // todo: add DAO1.transfer DAO-44
         stakes[msg.sender][_stakeId].harvestedYield = stakes[msg.sender][_stakeId].harvestedYield.add(harvestableYield);
         stakes[msg.sender][_stakeId].lastHarvestTime = _now();
-        // emit event
+        emit Harvest(msg.sender, _stakeId, harvestableYield,_now());
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
