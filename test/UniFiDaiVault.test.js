@@ -41,7 +41,7 @@ describe("UniFiStake", function () {
     expect(await this.pool.owner()).to.equal(this.owner.address)
   })
 
-  describe("deposit function", function () {
+  describe("function deposit()", function () {
     it("deposit token on stake contract", async function () {
       contract_balance = await this.depositToken.balanceOf(this.pool.address)
       expected_balance = this.alice_deposit.sub(this.alice_deposit.mul("50").div("10000"))
@@ -103,7 +103,7 @@ describe("UniFiStake", function () {
     })
   })
 
-  describe("withdraw function", function () {
+  describe("function withdraw()", function () {
     it("can't withdraw 0 token", async function () {
       await expect(this.pool.withdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens")
     })
@@ -170,7 +170,7 @@ describe("UniFiStake", function () {
     })
   })
 
-  describe("emergency withdraw function", function () {
+  describe("function emergencyWithdraw()", function () {
     // write checks that the tokens were actually debited from the contract to the owner's address
     it("Cannot withdraw 0 Tokens!", async function () {
       await expect(this.pool.emergencyWithdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens!")
@@ -236,7 +236,7 @@ describe("UniFiStake", function () {
     })
   })
 
-  describe("function transferAnyERC20Token", function () {
+  describe("function transferAnyERC20Token()", function () {
     it("function only owner", async function () {
       await expect(this.pool.connect(this.alice).transferAnyERC20Token(this.rewardToken.address, this.alice.address, 1000)).to.be.revertedWith(
         "Ownable: caller is not the owner"
@@ -285,7 +285,7 @@ describe("UniFiStake", function () {
     })
   })
 
-  describe("function transferAnyOldERC20Token", function () {
+  describe("function transferAnyOldERC20Token()", function () {
     it("function only owner", async function () {
       await expect(
         this.pool.connect(this.alice).transferAnyOldERC20Token(this.rewardToken.address, this.alice.address, 1000)
@@ -328,6 +328,21 @@ describe("UniFiStake", function () {
       await expect(this.pool.transferAnyOldERC20Token(this.rewardToken.address, this.owner.address, 1000)).to.revertedWith(
         "ERC20: transfer amount exceeds balance"
       )
+    })
+  })
+
+  describe("function addContractBalance()", async function () {
+    it("function only owner", async function () {
+      await expect(this.pool.connect(this.alice).addContractBalance(1000)).to.be.revertedWith("Ownable: caller is not the owner")
+    })
+
+    it("increase contractBalance", async function () {
+      await this.rewardToken.approve(this.pool.address, 1000)
+      await this.pool.addContractBalance(1000)
+      balance = await this.rewardToken.balanceOf(this.pool.address)
+      contractBalance = await this.pool.contractBalance()
+      expect(balance).to.equal(1000)
+      expect(contractBalance).to.equal(1000)
     })
   })
 })
