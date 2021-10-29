@@ -16,7 +16,7 @@ describe("L2Bridge", function () {
   })
 
   beforeEach(async function () {
-    this.token = await this.L2TokenFactory.deploy("DAO1", "DAO1")
+    this.token = await this.L2TokenFactory.deploy("UniFi", "UniFi")
     this.bridge = await this.L2BridgeFactory.deploy(this.l1Token.address, this.token.address)
     const BRIDGE_ROLE = await this.token.BRIDGE_ROLE()
     await this.token.grantRole(BRIDGE_ROLE, this.bridge.address)
@@ -30,8 +30,8 @@ describe("L2Bridge", function () {
   })
 
   it("l1 token has proper name and symbol", async function () {
-    expect(await this.token.name()).to.equal("DAO1")
-    expect(await this.token.symbol()).to.equal("DAO1")
+    expect(await this.token.name()).to.equal("UniFi")
+    expect(await this.token.symbol()).to.equal("UniFi")
   })
 
   it("outboundTransfer: unable to send 0 tokens", async function () {

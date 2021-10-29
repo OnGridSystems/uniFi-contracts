@@ -12,12 +12,12 @@ describe("L1 Bridge", function () {
     this.oracle = this.signers[4]
     this.blackhole = this.signers[4]
 
-    this.TokenFactory = await ethers.getContractFactory("DAO1")
+    this.TokenFactory = await ethers.getContractFactory("UniFi")
     this.L1BridgeFactory = await ethers.getContractFactory("L1Bridge")
   })
 
   beforeEach(async function () {
-    this.token = await this.TokenFactory.deploy("DAO1", "DAO1", this.owner.address)
+    this.token = await this.TokenFactory.deploy("UniFi", "UniFi", this.owner.address)
     // burn tokens for round numbers in tests
     await this.token.transfer(this.blackhole.address, parseEther("2600000"))
     this.bridge = await this.L1BridgeFactory.deploy(this.token.address, this.l2Token.address)

@@ -10,18 +10,18 @@ describe("L2 bridged token", function () {
     this.bridge = this.signers[3]
 
     this.contract = await ethers.getContractFactory("L2BridgedToken")
-    this.token = await this.contract.deploy("DAO1", "DAO1")
+    this.token = await this.contract.deploy("UniFi", "UniFi")
 
     const BRIDGE_ROLE = await this.token.BRIDGE_ROLE()
     await this.token.grantRole(BRIDGE_ROLE, this.bridge.address)
   })
 
   it("has a name", async function () {
-    expect(await this.token.name()).to.equal("DAO1")
+    expect(await this.token.name()).to.equal("UniFi")
   })
 
   it("has a symbol", async function () {
-    expect(await this.token.symbol()).to.equal("DAO1")
+    expect(await this.token.symbol()).to.equal("UniFi")
   })
 
   it("has 18 decimals", async function () {
@@ -59,7 +59,7 @@ describe("L2 bridged token", function () {
 
       describe("Basic transfers", function () {
         beforeEach(async function () {
-          ownerDAO1Balance = await this.token.balanceOf(this.owner.address)
+          ownerUniFiBalance = await this.token.balanceOf(this.owner.address)
           transfer = await this.token.connect(this.owner).transfer(this.account1.address, amount)
         })
 
@@ -68,7 +68,7 @@ describe("L2 bridged token", function () {
         })
 
         it("spender's balance decreased", async function () {
-          expect(await this.token.balanceOf(this.owner.address)).to.equal(ownerDAO1Balance.sub(amount))
+          expect(await this.token.balanceOf(this.owner.address)).to.equal(ownerUniFiBalance.sub(amount))
         })
 
         it("receiver's balance increased", async function () {
@@ -101,7 +101,7 @@ describe("L2 bridged token", function () {
 
         describe("transferFrom", function () {
           beforeEach(async function () {
-            ownerDAO1Balance = await this.token.balanceOf(this.owner.address)
+            ownerUniFiBalance = await this.token.balanceOf(this.owner.address)
             transferFrom = await this.token.connect(this.account1).transferFrom(this.owner.address, this.account2.address, amount.sub(1))
           })
 
@@ -132,7 +132,7 @@ describe("L2 bridged token", function () {
           it("reverts if account2 has not enough allowance", async function () {
             transferFrom = this.token.connect(this.account2).transferFrom(this.owner.address, this.account2.address, 1)
 
-            await expect(transferFrom).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
+            await expect(transferFrom).to.be.revertedWith("ERC20: insufficient allowance")
           })
         })
       })
