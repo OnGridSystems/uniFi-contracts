@@ -85,7 +85,29 @@ contract FixedStaking is Ownable {
         totalYield = _stake.totalYield;
         harvestedYield = _stake.harvestedYield;
         lastHarvestTime = _stake.lastHarvestTime;
-        harvestableYield = 0; // todo: dynamically calculate in DAO-42
+        harvestableYield = calculateHarvestableYield(
+            _stake.totalYield,
+            _stake.startTime,
+            _stake.endTime,
+            _stake.lastHarvestTime,
+            _stake.harvestedYield
+        );
+    }
+
+    function calculateHarvestableYield(
+        uint256 totalYield,
+        uint256 startTime,
+        uint256 endTime,
+        uint256 lastHarvestTime,
+        uint256 harvestedYield
+    ) private view returns (uint256) {
+        uint256 harvestableYield;
+        if (_now() > endTime) {
+            harvestableYield = totalYield.sub(harvestedYield);
+        } else {
+            harvestableYield = totalYield.mul(_now().sub(lastHarvestTime)).div(endTime.sub(startTime));
+        }
+        return harvestableYield;
     }
 
     function start() public onlyOwner {
@@ -107,14 +129,14 @@ contract FixedStaking is Ownable {
                 stakedAmount: _amount,
                 startTime: startTime,
                 endTime: endTime,
-                totalYield: _amount.mul(rewardRate).div(10000), 
+                totalYield: _amount.mul(rewardRate).div(10000),
                 harvestedYield: 0, // todo will be mutated by harvest() DAO-42
                 lastHarvestTime: startTime //todo will be mutated by harvest() DAO-42
             })
         );
         emit Stake(msg.sender, getStakesLength(msg.sender), _amount, startTime, endTime);
     }
-    
+
     // Withdraw user's stake
     function unstake(uint256 _stakeId) public {
         // require the stake is active DAO-43
@@ -126,9 +148,17 @@ contract FixedStaking is Ownable {
     }
 
     function harvest(uint256 _stakeId) public {
-        // todo: DAO-42
+        StakeInfo memory _stake = stakes[msg.sender][_stakeId];
+        uint256 harvestableYield = calculateHarvestableYield(
+            _stake.totalYield,
+            _stake.startTime,
+            _stake.endTime,
+            _stake.lastHarvestTime,
+            _stake.harvestedYield
+        );
         // todo: add DAO1.transfer DAO-44
-        // mutate stake
+        stakes[msg.sender][_stakeId].harvestedYield = stakes[msg.sender][_stakeId].harvestedYield.add(harvestableYield);
+        stakes[msg.sender][_stakeId].lastHarvestTime = _now();
         // emit event
     }
 
