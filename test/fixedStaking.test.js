@@ -2,16 +2,17 @@ const { ethers } = require("hardhat")
 const { expect } = require("chai")
 const { BN } = require("bn.js")
 
-describe("FixedStake", function () {
+describe("FixedStaking", function () {
   before(async function () {
     this.signers = await ethers.getSigners()
     this.alice = this.signers[0]
+    this.token = this.signers[1]
 
-    this.contract = await ethers.getContractFactory("DAO1FarmingSafeswap")
+    this.contract = await ethers.getContractFactory("FixedStaking")
   })
 
   beforeEach(async function () {
-    this.pool = await this.contract.deploy()
+    this.pool = await this.contract.deploy(this.token.address, 0, 0, 0)
     await this.pool.deployed()
   })
 
