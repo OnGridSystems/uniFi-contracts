@@ -19,7 +19,7 @@ describe("L2Bridge", function () {
   })
 
   it("outboundTransfer: unable to send 0 tokens", async function () {
-    expect(this.bridge.outboundTransfer(0)).to.be.revertedWith("Cannot burn 0 Tokens")
+    expect(this.bridge.outboundTransfer(this.owner.address, 0)).to.be.revertedWith("Cannot burn 0 Tokens")
   })
 
   it("finalizeInboundTransfer: unable to mint 0 tokens", async function () {
