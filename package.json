@@ -1,7 +1,7 @@
 {
-  "name": "dao1_contracts",
+  "name": "UniFi_contracts",
   "version": "1.0.0",
-  "description": "DAO1 Ethereum contracts",
+  "description": "UniFi Ethereum contracts",
   "main": "hardhat.config.js",
   "directories": {
     "test": "test"
@@ -19,14 +19,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OnGridSystems/dao1_contracts.git"
+    "url": "git+https://github.com/OnGridSystems/UniFi_contracts.git"
   },
   "author": "",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/OnGridSystems/dao1_contracts/issues"
+    "url": "https://github.com/OnGridSystems/UniFi_contracts/issues"
   },
-  "homepage": "https://github.com/OnGridSystems/dao1_contracts#readme",
+  "homepage": "https://github.com/OnGridSystems/UniFi_contracts#readme",
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-solhint": "^2.0.0",

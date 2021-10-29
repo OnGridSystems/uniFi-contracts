@@ -3,9 +3,9 @@
 
 pragma solidity 0.8.0;
 
-import "../DAO1DaiVault.sol";
+import "../UniFiDaiVault.sol";
 
-contract DAO1DaiVaultMock is DAO1DaiVault {
+contract UniFiDaiVaultMock is UniFiDaiVault {
 
    function ChangeDepositToken(address newToken) public{
        trustedDepositTokenAddress = newToken;

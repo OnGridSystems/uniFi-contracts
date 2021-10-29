@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 
-contract UniFiFarmingQuickswap2 is Ownable {
+contract UniFiFarmingUniswap is Ownable {
     using SafeMath for uint256;
     using Address for address;
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -20,16 +20,16 @@ contract UniFiFarmingQuickswap2 is Ownable {
     // these contracts are "trusted" and checked to not contain re-entrancy pattern
     // to safely avoid checks-effects-interactions where needed to simplify logic
     address public trustedDepositTokenAddress =
-        0xD8c0EE573c8FD7F557A2827b39834675e33eccfd;
+        0xF94556124786E08171d278a75cf1b46eE9592227;
     address public trustedRewardTokenAddress =
-        0x3c5D1617C30BA71972adD4b0C9A6B9848f2afeeD;
-    uint256 public constant LOCKUP_TIME = 30 days;
+        0xCE3f6f6672616c39D8B6858F8DAC9902eCa42C84;
+    uint256 public constant LOCKUP_TIME = 3 days;
 
     uint256 public constant STAKING_FEE_RATE_X_100 = 50;
     uint256 public constant UNSTAKING_FEE_RATE_X_100 = 50;
 
     // Amount of tokens
-    uint256 public disburseAmount = 9900e18;
+    uint256 public disburseAmount = 5400e18;
     // To be disbursed continuously over this duration
     uint256 public disburseDuration = 180 days;
 

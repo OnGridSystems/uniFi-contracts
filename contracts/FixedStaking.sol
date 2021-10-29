@@ -107,7 +107,7 @@ contract FixedStaking is Ownable {
     // Deposit user's stake
     function stake(uint256 _amount) public {
         require(stakesOpen, "stake: not open");
-        // todo: add DAO1.transferFrom DAO-44
+        // todo: add UniFi.transferFrom DAO-44
         uint256 startTime = _now();
         uint256 endTime = _now().add(stakeDurationDays.mul(1 days));
         stakes[msg.sender].push(
@@ -134,12 +134,12 @@ contract FixedStaking is Ownable {
         bool early;
         require(active, "Stake is not active!");
         if (_now() > endTime) {
-            // todo: add DAO1.transfer amount DAO-44
+            // todo: add UniFi.transfer amount DAO-44
             stakes[msg.sender][_stakeId].active = false;
             totalStaked = totalStaked.sub(stakedAmount);
             early = false;
         } else {
-            // todo: add DAO1.transfer amount-amount*earlyUnstakeFee DAO-44
+            // todo: add UniFi.transfer amount-amount*earlyUnstakeFee DAO-44
             stakes[msg.sender][_stakeId].active = false;
             stakes[msg.sender][_stakeId].endTime = _now();
             stakes[msg.sender][_stakeId].totalYield = harvestedYield.add(harvestableYield);
@@ -154,7 +154,7 @@ contract FixedStaking is Ownable {
     function harvest(uint256 _stakeId) public {
         (, , , , , uint256 harvestedYield, , uint256 harvestableYield) = getStake(msg.sender, _stakeId);
         require(harvestableYield != 0, "harvestableYield is zero");
-        // todo: add DAO1.transfer DAO-44
+        // todo: add UniFi.transfer DAO-44
         stakes[msg.sender][_stakeId].harvestedYield = harvestedYield.add(harvestableYield);
         stakes[msg.sender][_stakeId].lastHarvestTime = _now();
         emit Harvest(msg.sender, _stakeId, harvestableYield, _now());
@@ -162,7 +162,7 @@ contract FixedStaking is Ownable {
 
     function withdrawCollectedFees(address _to, uint256 amount) public onlyOwner {
         require(collectedFees >= amount, "Amount is more than there are collectedFees!");
-        // todo: add DAO1.transfer DAO-44
+        // todo: add UniFi.transfer DAO-44
         collectedFees = collectedFees.sub(amount);
     }
 
