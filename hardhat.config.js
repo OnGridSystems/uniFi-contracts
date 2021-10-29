@@ -26,5 +26,10 @@ module.exports = {
         }
       },
     ],
+    overrides: {
+      "contracts/FixedStaking.sol": {
+        version: "0.8.6",
+      }
+    }
   },
 };
