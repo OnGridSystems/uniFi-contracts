@@ -47,7 +47,7 @@ contract FixedStaking is Ownable {
 
     event EmergencyWithdraw(address indexed user, uint256 indexed stakeId, uint256 amount);
 
-    event Harvest(address indexed user, uint256 indexed stakeId, uint256 amount,uint256 harvestTime);
+    event Harvest(address indexed user, uint256 indexed stakeId, uint256 amount, uint256 harvestTime);
 
     constructor(
         IERC20 _token,
@@ -112,12 +112,12 @@ contract FixedStaking is Ownable {
         return harvestableYield;
     }
 
-    function activeStake(address _userAddress) public view returns(bool[] memory){
-        uint256 length=getStakesLength(_userAddress);
+    function activeStake(address _userAddress) public view returns (bool[] memory) {
+        uint256 length = getStakesLength(_userAddress);
         bool[] memory activeStakePos = new bool[](length);
-        for (uint256 i = 0; i < length; i = i.add(1)){
-            if (stakes[_userAddress][i].active==true){
-                activeStakePos[i]=true;
+        for (uint256 i = 0; i < length; i = i.add(1)) {
+            if (stakes[_userAddress][i].active == true) {
+                activeStakePos[i] = true;
             }
         }
         return activeStakePos;
@@ -143,21 +143,23 @@ contract FixedStaking is Ownable {
                 startTime: startTime,
                 endTime: endTime,
                 totalYield: _amount.mul(rewardRate).div(10000),
-                harvestedYield: 0, // todo will be mutated by harvest() DAO-42
-                lastHarvestTime: startTime //todo will be mutated by harvest() DAO-42
+                harvestedYield: 0,
+                lastHarvestTime: startTime
             })
         );
+        totalStaked = totalStaked.add(_amount);
         emit Stake(msg.sender, getStakesLength(msg.sender), _amount, startTime, endTime);
     }
 
     // Withdraw user's stake
     function unstake(uint256 _stakeId) public {
-        // require the stake is active DAO-43
-        // require the stake is expired DAO-43
-        // if stake is not expired: early unstake and pay fines DAO-45
-        // todo: add DAO1.transfer DAO-44
+        StakeInfo memory _stake = stakes[msg.sender][_stakeId];
+        require(_stake.active == true, "Stake is not active!");
+        require(_now() > _stake.endTime, "Deadline for unstake has not passed!");
+        // todo: add DAO1.transfer amount DAO-44
         stakes[msg.sender][_stakeId].active = false;
-        emit Unstake(msg.sender, _stakeId, 0, 0, 0);
+        totalStaked = totalStaked.sub(_stake.stakedAmount);
+        emit Unstake(msg.sender, _stakeId, _stake.stakedAmount, _stake.startTime, _stake.endTime);
     }
 
     function harvest(uint256 _stakeId) public {
@@ -172,7 +174,7 @@ contract FixedStaking is Ownable {
         // todo: add DAO1.transfer DAO-44
         stakes[msg.sender][_stakeId].harvestedYield = stakes[msg.sender][_stakeId].harvestedYield.add(harvestableYield);
         stakes[msg.sender][_stakeId].lastHarvestTime = _now();
-        emit Harvest(msg.sender, _stakeId, harvestableYield,_now());
+        emit Harvest(msg.sender, _stakeId, harvestableYield, _now());
     }
 
     // Withdraw without caring about rewards. EMERGENCY ONLY.
