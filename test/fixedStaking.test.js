@@ -260,7 +260,19 @@ describe("FixedStaking", function () {
                   expect(await this.pool.unallocatedTokens()).to.equal(fee1.add(reward.sub(reward.div("2"))))
                 })
 
-                describe("owner withdraws unalocated tokens", function () {
+                describe("owner try to withdraw unalocated tokens", function () {
+                  it("reverts if withdrdaw earlier than withdraw_lock passed", async function () {
+                    await expect(
+                      this.pool.withdrawUnallocatedTokens(this.alice.address, "10")
+                    ).to.be.revertedWith("Can't withdraw earlier than WITHDRAWAL_LOCKUP")
+                  })
+                })
+
+                describe("owner withdraws unalocated tokens after withdraw_lock passed", function () {
+                  beforeEach(async function () {
+                    await this.pool.increaseCurrentTime(days.mul("18").mul("30").add("1"))
+                  })
+
                   it("emits Transfer event on withdrawUnallocatedTokens", async function () {
                     await expect(await this.pool.withdrawUnallocatedTokens(this.alice.address, 10))
                       .to.emit(this.token, "Transfer")
@@ -379,7 +391,19 @@ describe("FixedStaking", function () {
                     )
                   })
 
-                  describe("owner withdraws unalocated tokens", function () {
+                  describe("owner try to withdraw unalocated tokens", function () {
+                    it("reverts if withdrdaw earlier than withdraw_lock passed", async function () {
+                      await expect(
+                        this.pool.withdrawUnallocatedTokens(this.alice.address, "10")
+                      ).to.be.revertedWith("Can't withdraw earlier than WITHDRAWAL_LOCKUP")
+                    })
+                  })
+
+                  describe("owner withdraws unalocated tokens after withdraw_lock passed", function () {
+                    beforeEach(async function () {
+                      await this.pool.increaseCurrentTime(days.mul("18").mul("30").add("1"))
+                    })
+
                     it("emits Transfer event on withdrawUnallocatedTokens", async function () {
                       await expect(await this.pool.withdrawUnallocatedTokens(this.alice.address, 10))
                         .to.emit(this.token, "Transfer")
@@ -527,7 +551,19 @@ describe("FixedStaking", function () {
                     expect(await this.pool.unallocatedTokens()).to.equal(fee1)
                   })
 
-                  describe("owner withdraws unalocated tokens", function () {
+                  describe("owner try to withdraw unalocated tokens", function () {
+                    it("reverts if withdrdaw earlier than withdraw_lock passed", async function () {
+                      await expect(
+                        this.pool.withdrawUnallocatedTokens(this.alice.address, "10")
+                      ).to.be.revertedWith("Can't withdraw earlier than WITHDRAWAL_LOCKUP")
+                    })
+                  })
+
+                  describe("owner withdraws unalocated tokens after withdraw_lock passed", function () {
+                    beforeEach(async function () {
+                      await this.pool.increaseCurrentTime(days.mul("18").mul("30").add("1"))
+                    })
+
                     it("emits Transfer event on withdrawUnallocatedTokens", async function () {
                       await expect(await this.pool.withdrawUnallocatedTokens(this.alice.address, 10))
                         .to.emit(this.token, "Transfer")
@@ -630,7 +666,19 @@ describe("FixedStaking", function () {
                       expect(await this.pool.unallocatedTokens()).to.equal(fee1.add(fee2))
                     })
 
-                    describe("owner withdraws unalocated tokens", function () {
+                    describe("owner try to withdraw unalocated tokens", function () {
+                      it("reverts if withdrdaw earlier than withdraw_lock passed", async function () {
+                        await expect(
+                          this.pool.withdrawUnallocatedTokens(this.alice.address, "10")
+                        ).to.be.revertedWith("Can't withdraw earlier than WITHDRAWAL_LOCKUP")
+                      })
+                    })
+
+                    describe("owner withdraws unalocated tokens after withdraw_lock passed", function () {
+                      beforeEach(async function () {
+                        await this.pool.increaseCurrentTime(days.mul("18").mul("30").add("1"))
+                      })
+
                       it("emits Transfer event on withdrawUnallocatedTokens", async function () {
                         await expect(await this.pool.withdrawUnallocatedTokens(this.alice.address, 10))
                           .to.emit(this.token, "Transfer")
