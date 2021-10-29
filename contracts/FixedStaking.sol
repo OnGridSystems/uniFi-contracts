@@ -40,27 +40,11 @@ contract FixedStaking is Ownable {
     // nominated in basis points (1/10000) of staked amount
     uint256 public rewardRate;
 
-    event Stake(
-        address indexed user,
-        uint256 indexed stakeId,
-        uint256 amount,
-        uint256 startTime,
-        uint256 endTime
-    );
+    event Stake(address indexed user, uint256 indexed stakeId, uint256 amount, uint256 startTime, uint256 endTime);
 
-    event Unstake(
-        address indexed user,
-        uint256 indexed stakeId,
-        uint256 amount,
-        uint256 startTime,
-        uint256 endTime
-    );
+    event Unstake(address indexed user, uint256 indexed stakeId, uint256 amount, uint256 startTime, uint256 endTime);
 
-    event EmergencyWithdraw(
-        address indexed user,
-        uint256 indexed stakeId,
-        uint256 amount
-    );
+    event EmergencyWithdraw(address indexed user, uint256 indexed stakeId, uint256 amount);
 
     constructor(
         IERC20 _token,
@@ -74,11 +58,7 @@ contract FixedStaking is Ownable {
         earlyUnstakeFee = _earlyUnstakeFee;
     }
 
-    function getStakesLength(address _userAddress)
-        public
-        view
-        returns (uint256)
-    {
+    function getStakesLength(address _userAddress) public view returns (uint256) {
         return stakes[_userAddress].length;
     }
 

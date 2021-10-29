@@ -1,0 +1,6 @@
+contracts/DAO1DaiVault.sol
+contracts/DAO1FarmingSafeswap.sol
+contracts/DAO1FarmingUniswap.sol
+contracts/MaticDAO1FarmingQuickswap.sol
+contracts/MaticDAO1FarmingQuickswap2.sol
+contracts/YfDaiFarmingUniswap.sol

@@ -12,8 +12,10 @@
     "test": "hardhat test",
     "test:coverage": "cross-env NODE_OPTIONS=\"--max-old-space-size=2048\" hardhat coverage",
     "test:gas": "cross-env REPORT_GAS=true yarn test",
-    "prettier": "prettier --write test/*.js && prettier --write contracts/*.sol",
-    "lint": "yarn prettier && solhint -c .solhint.json contracts/*.sol && solium -d contracts"
+    "prettier": "prettier --write test/*.js && prettier --write contracts/*.sol contracts/*/*.sol",
+    "solhint": "solhint -c .solhint.json contracts/*.sol contracts/*/*.sol",
+    "solium": "solium -d contracts",
+    "lint": "yarn prettier && yarn solhint && yarn solium"
   },
   "repository": {
     "type": "git",

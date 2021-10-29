@@ -1,7 +1,7 @@
 module.exports = {
   overrides: [
     {
-      files: "*.solc",
+      files: "*.sol",
       options: {
         bracketSpacing: false,
         printWidth: 145,
