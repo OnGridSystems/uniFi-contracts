@@ -33,12 +33,73 @@ describe("UniFiStake", function () {
   it("should be deployed", async function () {
     const deployed = await this.pool.deployed()
     expect(deployed, true)
-    await this.depositToken.connect(this.bob).approve(this.pool.address, this.alice_deposit)
-    await this.pool.connect(this.bob).deposit(this.alice_deposit)
   })
 
   it("should have correct state variables", async function () {
     expect(await this.pool.owner()).to.equal(this.owner.address)
+  })
+
+  it("function claim()", async function () {
+    
+    balance=1000
+    await this.rewardToken.approve(this.pool.address, balance)
+    await this.pool.addContractBalance(balance)
+
+    await this.pool.connect(this.alice).claim()
+    alice_reward_balance = await this.rewardToken.balanceOf(this.alice.address)
+
+    expect(balance-1).to.equal(alice_reward_balance) // 1 is lost during calculations reward
+  })
+
+  it("reward logic // logs above", async function () {
+    twoSign = this.signers[3]
+    threeSign = this.signers[4]
+    fourSign = this.signers[5]
+
+    two_deposit=this.alice_deposit.mul('6')
+    three_deposit=this.alice_deposit.mul('25').div('10')
+    four_deposit=this.alice_deposit.mul('5').div('10')
+
+    await this.depositToken.connect(this.bob).transfer(twoSign.address, two_deposit)
+    await this.depositToken.connect(this.bob).transfer(threeSign.address, three_deposit)
+    await this.depositToken.connect(this.bob).transfer(fourSign.address, four_deposit)
+
+    await this.depositToken.connect(twoSign).approve(this.pool.address, two_deposit)
+    await this.depositToken.connect(threeSign).approve(this.pool.address,three_deposit)
+    await this.depositToken.connect(fourSign).approve(this.pool.address, four_deposit)
+
+    await this.pool.connect(twoSign).deposit(two_deposit)
+    await this.pool.connect(threeSign).deposit(three_deposit)
+    await this.pool.connect(fourSign).deposit(four_deposit)
+
+    total_tokens = two_deposit.add(three_deposit).add(four_deposit).add(this.alice_deposit)
+    console.log(total_tokens.toString())
+    total_reward=BigNumber.from("100")
+    await this.rewardToken.approve(this.pool.address, total_reward)
+    await this.pool.addContractBalance(total_reward)
+
+    await this.pool.connect(this.alice).claim()
+    await this.pool.connect(twoSign).claim()
+    await this.pool.connect(threeSign).claim()
+    await this.pool.connect(fourSign).claim()
+
+    alice_reward = await this.rewardToken.balanceOf(this.alice.address)
+    two_reward=await this.rewardToken.balanceOf(twoSign.address)
+    three_reward=await this.rewardToken.balanceOf(threeSign.address)
+    four_reward=await this.rewardToken.balanceOf(fourSign.address)
+    
+    console.log("total number of reward tokens", total_reward.toString())
+    console.log("total number of award tokens issued",(two_reward.add(three_reward).add(four_reward).add(alice_reward)).toString())
+    console.log("one_reward", two_reward.toString() )
+    console.log("two_reward", three_reward.toString() )
+    console.log("alice_reward", alice_reward.toString())
+    console.log("three_reward", four_reward.toString())
+    console.log("approximately the percentage of the deposit from the total number of invested tokens\nis the percentage of reward tokens that the user will receive")
+
+    expect((this.alice_deposit.mul(total_reward).div(total_tokens)).sub('1')).to.equal(alice_reward) // 1 is lost during calculations reward
+    expect((two_deposit.mul(total_reward).div(total_tokens)).sub('1')).to.equal(two_reward) // 1 is lost during calculations reward
+    expect((three_deposit.mul(total_reward).div(total_tokens)).sub('1')).to.equal(three_reward) // 1 is lost during calculations reward
+    expect((four_deposit.mul(total_reward).div(total_tokens)).sub('1')).to.equal(four_reward) // 1 is lost during calculations reward
   })
 
   describe("function deposit()", function () {
@@ -69,21 +130,19 @@ describe("UniFiStake", function () {
       expect(ownerBalance).to.equal(balance)
     })
 
-    it("getting a reward for not the first deposits // bad work? Logs above", async function () {
+    it("getting a reward for not the first deposits", async function () {
       await this.depositToken.connect(this.bob).transfer(this.alice.address, this.alice_deposit)
       await this.depositToken.connect(this.alice).approve(this.pool.address, this.alice_deposit)
 
-      await this.rewardToken.approve(this.pool.address, 1000000)
-      await this.pool.addContractBalance(1000000)
+      balance=1000
+      await this.rewardToken.approve(this.pool.address, balance)
+      await this.pool.addContractBalance(balance)
 
-      total_reward = await this.pool.contractBalance()
-      balance1 = await this.rewardToken.balanceOf(this.alice.address)
       await this.pool.connect(this.alice).deposit(this.alice_deposit)
-      balance2 = await this.rewardToken.balanceOf(this.alice.address)
+      alice_reward_balance = await this.rewardToken.balanceOf(this.alice.address)
 
-      console.log("total number of reward tokens", total_reward.toString())
-      console.log("initial balance of reward tokens", balance1.toString())
-      console.log("the balance of reward tokens after receiving the reward", balance2.toString())
+      expect(balance-1).to.equal(alice_reward_balance) // 1 is lost during calculations reward
+
     })
 
     it("can't deposit 0 token", async function () {
@@ -154,18 +213,17 @@ describe("UniFiStake", function () {
         expect(expected_balance).to.equal(contract_balance)
       })
 
-      it("getting a reward when withdrawing funds // bad work? Logs above", async function () {
-        await this.rewardToken.approve(this.pool.address, 1000000)
-        await this.pool.addContractBalance(1000000)
+      it("getting a reward when withdrawing funds", async function () {
+        
+        balance=1000
+        await this.rewardToken.approve(this.pool.address, balance)
+        await this.pool.addContractBalance(balance)
 
-        total_reward = await this.pool.contractBalance()
-        balance1 = await this.rewardToken.balanceOf(this.alice.address)
+
         await this.pool.connect(this.alice).withdraw(this.half_alice_deposit)
-        balance2 = await this.rewardToken.balanceOf(this.alice.address)
+        alice_reward_balance = await this.rewardToken.balanceOf(this.alice.address)
 
-        console.log("total number of reward tokens", total_reward.toString())
-        console.log("initial balance of reward tokens", balance1.toString())
-        console.log("the balance of reward tokens after receiving the reward", balance2.toString())
+        expect(balance-1).to.equal(alice_reward_balance) // 1 is lost during calculations reward
       })
     })
   })
