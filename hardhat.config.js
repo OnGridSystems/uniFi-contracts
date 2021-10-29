@@ -25,12 +25,16 @@ module.exports = {
           },
         },
       },
-    ],
-    overrides: {
-      "contracts/FixedStaking.sol": {
+      {
         version: "0.8.6",
-      }
-    }
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 200,
+          },
+        },
+      },
+    ],
   },
 
   namedAccounts: {
