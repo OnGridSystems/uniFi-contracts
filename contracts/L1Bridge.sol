@@ -14,8 +14,8 @@ contract L1Bridge is AccessControl {
     // L2 mintable + burnable token that acts as a twin of L1 token on L2
     IERC20 public l2Token;
 
-    // L1Token amounts locked on the bridge
-    mapping(address => uint256) public balances;
+    // total L1Token amount locked on the bridge
+    uint256 public totalBridgedBalance;
 
     bytes32 public constant ORACLE_ROLE = keccak256("ORACLE_ROLE");
 
@@ -38,8 +38,8 @@ contract L1Bridge is AccessControl {
      */
     function outboundTransfer(address _to, uint256 _amount) external {
         require(_amount > 0, "Cannot deposit 0 Tokens");
-        balances[msg.sender] = balances[msg.sender].add(_amount);
-        require(l1Token.transferFrom(msg.sender, address(this), _amount), "Insufficient Token Allowance");
+        totalBridgedBalance = totalBridgedBalance.add(_amount);
+        require(l1Token.transferFrom(msg.sender, address(this), _amount), "TRANSFER_FROM_FAILED");
         emit DepositInitiated(address(l1Token), msg.sender, _to, _amount);
     }
 
@@ -56,8 +56,8 @@ contract L1Bridge is AccessControl {
     ) external onlyRole(ORACLE_ROLE) {
         require(_amount > 0, "NO_AMOUNT");
         require(_to != address(0), "NO_RECEIVER");
-        require(balances[_to] >= _amount, "NOT_ENOUGH_BALANCE");
-        balances[_to] = balances[_to].sub(_amount);
+        require(totalBridgedBalance >= _amount, "NOT_ENOUGH_BALANCE");
+        totalBridgedBalance = totalBridgedBalance.sub(_amount);
         require(l1Token.transfer(_to, _amount), "TRANSFER_FAILED");
         emit WithdrawalFinalized(address(l1Token), _l2Tx, _to, _amount);
     }

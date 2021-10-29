@@ -10,6 +10,7 @@ describe("L1 Bridge", function () {
     this.l2Token = this.signers[2]
     this.l2holder = this.signers[3]
     this.oracle = this.signers[4]
+    this.blackhole = this.signers[4]
 
     this.TokenFactory = await ethers.getContractFactory("DAO1")
     this.L1BridgeFactory = await ethers.getContractFactory("L1Bridge")
@@ -17,6 +18,8 @@ describe("L1 Bridge", function () {
 
   beforeEach(async function () {
     this.token = await this.TokenFactory.deploy("DAO1", "DAO1", this.owner.address)
+    // burn tokens for round numbers in tests
+    await this.token.transfer(this.blackhole.address, parseEther("2600000"))
     this.bridge = await this.L1BridgeFactory.deploy(this.token.address, this.l2Token.address)
     const ORACLE_ROLE = await this.bridge.ORACLE_ROLE()
     await this.bridge.grantRole(ORACLE_ROLE, this.oracle.address)
@@ -27,8 +30,13 @@ describe("L1 Bridge", function () {
     expect(await this.token.deployed(), true)
   })
 
-  it("should have correct state variables", async function () {
-    expect(await this.token.owner()).to.equal(this.owner.address)
+  it("owner has token balance", async function () {
+    expect(await this.token.balanceOf(this.owner.address)).to.equal(parseEther("1000000"))
+  })
+
+  it("bridge has zero balance", async function () {
+    expect(await this.token.balanceOf(this.bridge.address)).to.equal(parseEther("0"))
+    expect(await this.bridge.totalBridgedBalance()).to.equal("0")
   })
 
   it("impossible to deposit zero tokens", async function () {
@@ -46,17 +54,16 @@ describe("L1 Bridge", function () {
 
   describe("after token deposited(first holder)", function () {
     beforeEach(async function () {
-      await this.token.approve(this.bridge.address, parseEther("500000"))
-      await this.bridge.outboundTransfer(this.l2holder.address, parseEther("500000"))
+      await this.token.approve(this.bridge.address, parseEther("300000"))
+      await this.bridge.outboundTransfer(this.l2holder.address, parseEther("300000"))
     })
 
-    it("token balance is correct", async function () {
-      const depositBalance = await this.token.balanceOf(this.bridge.address)
-      expect(depositBalance).to.equal(parseEther("500000"))
+    it("token balance moved from holder to bridge", async function () {
+      expect(await this.token.balanceOf(this.owner.address)).to.equal(parseEther("700000"))
+      expect(await this.token.balanceOf(this.bridge.address)).to.equal(parseEther("300000"))
     })
-    it("depositedTokens increased", async function () {
-      const depositBalanceOwner = await this.bridge.balances(this.owner.address)
-      expect(depositBalanceOwner).to.equal(parseEther("500000"))
+    it("totalBridgedBalance increased", async function () {
+      expect(await this.bridge.totalBridgedBalance()).to.equal(parseEther("300000"))
     })
 
     it("impossible to withdraw 0 tokens", async function () {
@@ -86,32 +93,32 @@ describe("L1 Bridge", function () {
           .finalizeInboundTransfer(
             this.owner.address,
             "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2",
-            parseEther("300000")
+            parseEther("200000")
           )
       })
-      it("token balance is correct", async function () {
-        const depositBalance = await this.token.balanceOf(this.bridge.address)
-        expect(depositBalance).to.equal(parseEther("200000"))
+
+      it("amount of tokens moved from bridge to receiver", async function () {
+        expect(await this.token.balanceOf(this.bridge.address)).to.equal(parseEther("100000"))
+        expect(await this.token.balanceOf(this.owner.address)).to.equal(parseEther("900000"))
       })
-      it("depositedTokens decreased", async function () {
-        const depositBalanceOwner = await this.bridge.balances(this.owner.address)
-        expect(depositBalanceOwner).to.equal(parseEther("200000"))
+
+      it("totalBridgedBalance decreased", async function () {
+        expect(await this.bridge.totalBridgedBalance()).to.equal(parseEther("100000"))
       })
     })
 
     describe("then second user deposited", function () {
       beforeEach(async function () {
-        await this.token.transfer(this.account1.address, parseEther("500000"))
-        await this.token.connect(this.account1).approve(this.bridge.address, parseEther("500000"))
-        await this.bridge.connect(this.account1).outboundTransfer(this.l2holder.address, parseEther("500000"))
+        await this.token.connect(this.blackhole).transfer(this.account1.address, parseEther("1000000"))
+        await this.token.connect(this.account1).approve(this.bridge.address, parseEther("400000"))
+        await this.bridge.connect(this.account1).outboundTransfer(this.l2holder.address, parseEther("400000"))
       })
-      it("token balance is correct", async function () {
-        const depositBalance = await this.token.balanceOf(this.bridge.address)
-        expect(depositBalance).to.equal(parseEther("1000000"))
+      it("token transferred from second user to bridge", async function () {
+        expect(await this.token.balanceOf(this.account1.address)).to.equal(parseEther("600000"))
+        expect(await this.token.balanceOf(this.bridge.address)).to.equal(parseEther("700000")) // was 300K, added 400K
       })
-      it("depositedTokens increased", async function () {
-        const depositBalanceAccount = await this.bridge.balances(this.account1.address)
-        expect(depositBalanceAccount).to.equal(parseEther("500000"))
+      it("totalBridgedBalance increased", async function () {
+        expect(await this.bridge.totalBridgedBalance()).to.equal(parseEther("700000"))
       })
 
       describe("then first holder withdraws", function () {
@@ -121,16 +128,15 @@ describe("L1 Bridge", function () {
             .finalizeInboundTransfer(
               this.owner.address,
               "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2",
-              parseEther("300000")
+              parseEther("100000")
             )
         })
-        it("token balance is correct", async function () {
-          const depositBalance = await this.token.balanceOf(this.bridge.address)
-          expect(depositBalance).to.equal(parseEther("700000"))
+        it("amount of tokens moved from bridge to first holder", async function () {
+          expect(await this.token.balanceOf(this.bridge.address)).to.equal(parseEther("600000"))
+          expect(await this.token.balanceOf(this.owner.address)).to.equal(parseEther("800000"))
         })
-        it("depositedTokens decreased", async function () {
-          const depositBalanceOwner = await this.bridge.balances(this.owner.address)
-          expect(depositBalanceOwner).to.equal(parseEther("200000"))
+        it("totalBridgedBalance decreased", async function () {
+          expect(await this.bridge.totalBridgedBalance()).to.equal(parseEther("600000"))
         })
       })
     })
