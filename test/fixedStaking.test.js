@@ -13,14 +13,19 @@ describe("FixedStaking", function () {
   })
 
   beforeEach(async function () {
-    this.pool = await this.contract.deploy(this.token.address, 100, 5000, 1000)
+    this.pool = await this.contract.deploy(this.token.address, 30, 5000, 1000)
     await this.pool.deployed()
   })
 
-  it("deployment and initial states", async function () {
+  it("initial states", async function () {
     const deployed = await this.pool.deployed()
     expect(deployed, true)
     expect(await this.pool.owner()).to.equal(this.alice.address)
+    expect(await this.pool.active()).to.equal(false)
+    expect(await this.pool.stakeDurationDays()).to.equal("30")
+    expect(await this.pool.rewardRate()).to.equal("5000")
+    expect(await this.pool.earlyUnstakeFee()).to.equal("1000")
+    expect(await this.pool.totalStaked()).to.equal("0")
     expect(await this.pool.getStakesLength(this.alice.address)).to.equal("0")
   })
 

@@ -30,7 +30,7 @@ contract FixedStaking is Ownable {
 
     // The position locking period in seconds.
     // Counted from the moment of stake deposit and expires after `stakeDuration` seconds.
-    uint256 public stakeDuration;
+    uint256 public stakeDurationDays;
 
     // Fee for early unstake in basis points (1/10000)
     // If the user withdraws before stake expiration, he pays `earlyUnstakeFee`
@@ -64,12 +64,12 @@ contract FixedStaking is Ownable {
 
     constructor(
         IERC20 _token,
-        uint256 _stakeDuration,
+        uint256 _stakeDurationDays,
         uint256 _rewardRate,
         uint256 _earlyUnstakeFee
     ) {
         token = _token;
-        stakeDuration = _stakeDuration;
+        stakeDurationDays = _stakeDurationDays;
         rewardRate = _rewardRate;
         earlyUnstakeFee = _earlyUnstakeFee;
     }
@@ -97,7 +97,7 @@ contract FixedStaking is Ownable {
                 active: true,
                 stakedAmount: _amount,
                 startTime: _now(),
-                endTime: _now().add(stakeDuration),
+                endTime: _now().add(stakeDurationDays.mul(1 days)),
                 claimed: 0,
                 lastClaimTime: _now()
             })
