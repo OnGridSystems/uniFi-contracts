@@ -13,14 +13,12 @@ Install node packages (hardhat)
 ## Testing deploy
 
 Create local environments
-
 ```
 export MNEMONIC='<your MNEMONIC phrase>'
 export INFURA_API_KEY=<your API key>
 ```
 
 Run deploy
-
 ```
 npx hardhat --network rinkeby deploy
 npx hardhat --network rinkeby etherscan-verify --solc-input --api-key <Etherscan_API_Key>
