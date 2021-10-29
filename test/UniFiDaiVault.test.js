@@ -164,4 +164,64 @@ describe("UniFiStake", function () {
       })
     })
   })
+
+  describe("emergency withdraw function", function () {
+    // write checks that the tokens were actually debited from the contract to the owner's address
+    it("Cannot withdraw 0 Tokens!", async function () {
+      await expect(this.pool.emergencyWithdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens!")
+    })
+
+    it("you can't emergencyWithdraw until the stake period has passed", async function () {
+      await expect(this.pool.connect(this.alice).emergencyWithdraw(5000)).to.be.revertedWith("You recently staked, please wait before withdrawing.")
+    })
+
+    describe("Stake period has passed", function () {
+      beforeEach(async function () {
+        LOCKUP_TIME = await this.pool.LOCKUP_TIME()
+        await network.provider.send("evm_increaseTime", [parseInt(LOCKUP_TIME) + 1])
+      })
+
+      it("you can't emergencyWithdraw more than you have on the balance sheet", async function () {
+        await expect(this.pool.connect(this.alice).emergencyWithdraw(this.alice_deposit)).to.be.revertedWith("Invalid amount to withdraw")
+      })
+
+      it("emergencyWithdraw when stake period has passed", async function () {
+        await this.pool.connect(this.alice).emergencyWithdraw(this.alice_deposit / 2)
+        contract_balance = await this.depositToken.balanceOf(this.pool.address)
+        holder_balance = await this.depositToken.balanceOf(this.alice.address)
+        pool_balance = await this.pool.depositedTokens(this.alice.address)
+        expected_pool_balance = this.alice_deposit * (1 - this.fee) - this.alice_deposit / 2
+        expect(contract_balance).to.equal(this.alice_deposit * (1 - this.fee) - this.alice_deposit / 2)
+        expect(holder_balance).to.equal((this.alice_deposit / 2) * (1 - this.fee))
+        expect(pool_balance).to.equal(expected_pool_balance)
+      })
+
+      it("owner receives fee for the emergencyWithdraw", async function () {
+        await this.pool.connect(this.alice).emergencyWithdraw(this.alice_deposit / 2)
+        ownerBalance = await this.depositToken.balanceOf(this.owner.address)
+
+        deposit_fee = this.alice_deposit * this.fee
+        withdraw_fee = (this.alice_deposit / 2) * this.fee
+        expect(ownerBalance).to.equal(deposit_fee + withdraw_fee)
+      })
+
+      it("decrease in the total number of deposit tokens during the emergencyWithdraw", async function () {
+        await this.pool.connect(this.alice).emergencyWithdraw(this.alice_deposit / 2)
+        contract_balance = await this.pool.totalTokens()
+        expected_balance = this.alice_deposit * (1 - this.fee) - this.alice_deposit / 2
+        expect(expected_balance).to.equal(contract_balance)
+      })
+
+      it("emergency withdrawing does not issue a reward", async function () {
+        await this.rewardToken.approve(this.pool.address, 1000000)
+        await this.pool.addContractBalance(1000000)
+
+        balance1 = await this.rewardToken.balanceOf(this.alice.address)
+        await this.pool.connect(this.alice).emergencyWithdraw(this.alice_deposit / 2)
+        balance2 = await this.rewardToken.balanceOf(this.alice.address)
+        expect(balance1).to.equal(balance2)
+
+      })
+    })
+  })
 })
