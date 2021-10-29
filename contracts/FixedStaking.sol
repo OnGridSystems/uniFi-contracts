@@ -24,7 +24,7 @@ contract FixedStaking is Ownable {
 
     IERC20 public token;
 
-    mapping(address => StakeInfo[]) internal users;
+    mapping(address => StakeInfo[]) public stakes;
 
     uint256 public totalStaked;
 
@@ -74,6 +74,14 @@ contract FixedStaking is Ownable {
         earlyUnstakeFee = _earlyUnstakeFee;
     }
 
+    function getStakesLength(address _userAddress)
+        public
+        view
+        returns (uint256)
+    {
+        return stakes[_userAddress].length;
+    }
+
     function start() public onlyOwner {
         active = true;
     }
@@ -84,11 +92,22 @@ contract FixedStaking is Ownable {
 
     // Deposit user's stake
     function stake(uint256 _amount) public {
+        stakes[msg.sender].push(
+            StakeInfo({
+                active: true,
+                stakedAmount: _amount,
+                startTime: block.timestamp,
+                endTime: block.timestamp.add(stakeDuration),
+                claimed: 0,
+                lastClaimTime: block.timestamp
+            })
+        );
         emit Stake(msg.sender, 0, _amount, 0, 0);
     }
 
     // Withdraw user's stake
     function unstake(uint256 _stakeId) public {
+        stakes[msg.sender][_stakeId].active = false;
         emit Unstake(msg.sender, _stakeId, 0, 0, 0);
     }
 

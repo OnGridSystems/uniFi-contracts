@@ -6,22 +6,55 @@ describe("FixedStaking", function () {
   before(async function () {
     this.signers = await ethers.getSigners()
     this.alice = this.signers[0]
-    this.token = this.signers[1]
+    this.bob = this.signers[1]
+    this.token = this.signers[2]
 
     this.contract = await ethers.getContractFactory("FixedStaking")
   })
 
   beforeEach(async function () {
-    this.pool = await this.contract.deploy(this.token.address, 0, 0, 0)
+    this.pool = await this.contract.deploy(this.token.address, 100, 5000, 1000)
     await this.pool.deployed()
   })
 
-  it("should be deployed", async function () {
+  it("deployment and initial states", async function () {
     const deployed = await this.pool.deployed()
     expect(deployed, true)
+    expect(await this.pool.owner()).to.equal(this.alice.address)
+    expect(await this.pool.getStakesLength(this.alice.address)).to.equal("0")
   })
 
-  it("should have correct state variables", async function () {
-    expect(await this.pool.owner()).to.equal(this.alice.address)
+  describe("Alice deposited", function () {
+    beforeEach(async function () {
+      await this.pool.stake(123)
+    })
+
+    it("her stake is visible", async function () {
+      expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
+      expect((await this.pool.stakes(this.alice.address, 0)).active).to.equal(true)
+      expect((await this.pool.stakes(this.alice.address, 0)).stakedAmount).to.equal("123")
+      expect((await this.pool.stakes(this.alice.address, 0)).claimed).to.equal("0")
+    })
+
+    it("second stake of Alice", async function () {
+      await this.pool.stake(667)
+      expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
+      expect((await this.pool.stakes(this.alice.address, 1)).active).to.equal(true)
+      expect((await this.pool.stakes(this.alice.address, 1)).stakedAmount).to.equal("667")
+      expect((await this.pool.stakes(this.alice.address, 1)).claimed).to.equal("0")
+    })
+
+    describe("then Bob deposited", function () {
+      beforeEach(async function () {
+        await this.pool.connect(this.bob).stake(345)
+      })
+
+      it("his stake is also visible", async function () {
+        expect(await this.pool.getStakesLength(this.bob.address)).to.equal("1")
+        expect((await this.pool.stakes(this.bob.address, 0)).active).to.equal(true)
+        expect((await this.pool.stakes(this.bob.address, 0)).stakedAmount).to.equal("345")
+        expect((await this.pool.stakes(this.bob.address, 0)).claimed).to.equal("0")
+      })
+    })
   })
 })
