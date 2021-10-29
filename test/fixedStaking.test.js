@@ -4,6 +4,8 @@ const { BigNumber } = require("ethers")
 
 const days = BigNumber.from("60").mul("60").mul("24")
 
+const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
+
 describe("FixedStaking", function () {
   before(async function () {
     this.signers = await ethers.getSigners()
@@ -36,11 +38,19 @@ describe("FixedStaking", function () {
       expect(await this.token.balanceOf(this.alice.address)).to.equal(BigNumber.from("3600000").mul(BigNumber.from(10).pow(18)))
     })
 
+    it("should revert when Stakes are not started yet", async function () {
+     await expect(this.pool.stop()).to.be.revertedWith("Stakes are stopped already")
+    })
+
     describe("Start staking", async function () {
       beforeEach(async function () {
         await this.pool.start()
       })
-
+      
+      it("should revert when start () is called again", async function () {
+        await expect(this.pool.start()).to.be.revertedWith("Stakes are open already")
+      })
+      
       it("should revert if not enough reward tokens", async function () {
         await this.token.transfer(this.pool.address, 155)
         await expect(this.pool.stake(10000)).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
@@ -69,6 +79,18 @@ describe("FixedStaking", function () {
           expect(await this.pool.unallocatedTokens()).to.equal(totalReward)
         })
 
+        it("should revert if the contract address is zero", async function () {
+          await expect(this.contract.deploy(ZERO_ADDRESS, 30, 155, 155)).to.be.revertedWith("Empty token address")
+        })
+
+        it("should revert if the yield rate is zero", async function () {
+          await expect(this.contract.deploy(this.token.address, 30, 0, 155)).to.be.revertedWith("Zero yield rate")
+        })
+
+        it("should revert if the early unstake fee is zero", async function () {
+          await expect(this.contract.deploy(this.token.address, 30, 155, 0)).to.be.revertedWith("Zero early Unstake Fee")
+        })
+
         describe("Alice staked", function () {
           beforeEach(async function () {
             aliceInitBalance = BigNumber.from(await this.token.balanceOf(this.alice.address))
@@ -88,11 +110,6 @@ describe("FixedStaking", function () {
             const endTime = 30 * 24 * 60 * 60
 
             await expect(stake1).to.emit(this.pool, "Stake").withArgs(this.alice.address, stakeId, depositAmount, startTime, endTime)
-          })
-
-          it("Stop() called by owner closes stakes", async function () {
-            await this.pool.stop()
-            expect(await this.pool.stakesOpen()).to.equal(false)
           })
 
           it("Stake should revert if stakes are not open", async function () {
@@ -289,6 +306,10 @@ describe("FixedStaking", function () {
                     await this.pool.withdrawUnallocatedTokens(this.alice.address, "10")
                     expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.sub("20000").sub(fee1).add("10"))
                     expect(await this.pool.unallocatedTokens()).to.equal(fee1.add(reward.sub(reward.div("2"))).sub("10"))
+                  })
+
+                  it("should revert if the withdrawal amount Unallocated tokens is zero", async function () {
+                    await expect(this.pool.connect(this.alice).withdrawUnallocatedTokens(this.token.address, 0)).to.be.revertedWith("Zero amount")
                   })
                 })
 
