@@ -72,6 +72,15 @@ module.exports = {
       gasPrice: 1000000000,
     },
 
+    bsc: {
+      url: "https://bsc-dataseed.binance.org/",
+      accounts,
+      chainId: 56,
+      live: true,
+      saveDeployments: true,
+      gasPrice: 5000000000,
+    },
+
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_API_KEY}`,
       accounts,
