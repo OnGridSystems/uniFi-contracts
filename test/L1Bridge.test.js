@@ -1,7 +1,7 @@
 const { expect } = require("chai")
 const { parseEther } = ethers.utils
 
-describe("Bridge", function () {
+describe("L1 Bridge", function () {
   beforeEach(async function () {
     this.signers = await ethers.getSigners()
     this.owner = this.signers[0]
@@ -9,7 +9,7 @@ describe("Bridge", function () {
 
     this.tokenFactory = await ethers.getContractFactory("DAO1")
     this.depositToken = await this.tokenFactory.deploy("DAO1", "DAO1", this.owner.address)
-    this.contractFactory = await ethers.getContractFactory("Bridge")
+    this.contractFactory = await ethers.getContractFactory("L1Bridge")
     this.contract = await this.contractFactory.deploy(this.depositToken.address)
   })
 
