@@ -102,7 +102,6 @@ describe("FixedStaking", function () {
             })
 
             it("contract state", async function () {
-              console.log(reward.div("2").sub("1"), typeof reward.div("2").sub("1"))
               await this.pool.withdrawalPenalties(this.alice.address, reward.div("2").sub("1"))
               expect(await this.pool.penalties()).to.equal(reward.sub(reward.div("2").sub("1")))
             })
@@ -130,15 +129,8 @@ describe("FixedStaking", function () {
           })
 
           it("harvest", async function () {
-            await this.pool.harvest(0)
-            //it is possible to check Alice's balance when the DAO 1 token is connected
-            expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal(reward.div("2"))
-            expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(BigNumber.from("1700000000").add(days.mul("15")))
-          })
-          it("harvest", async function () {
             expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward.div("2"))
             await this.pool.harvest(0)
-            //await this.pool.increaseCurrentTime(days.mul("15"))
             //it is possible to check Alice's balance when the DAO 1 token is connected
             expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal(reward.div("2"))
             expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(BigNumber.from("1700000000").add(days.mul("15")))
