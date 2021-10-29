@@ -1,527 +1,1173 @@
 const { expect } = require("chai")
 const { BigNumber } = require("ethers")
 
+const days = BigNumber.from("60").mul("60").mul("24")
+
 describe("UniFiStake", function () {
   before(async function () {
     this.signers = await ethers.getSigners()
     this.owner = this.signers[0]
     this.alice = this.signers[1]
     this.bob = this.signers[2]
-    this.token = await ethers.getContractFactory("UniFi")
-    this.contract = await ethers.getContractFactory("UniFiDaiVaultMock")
+    this.dan = this.signers[3]
+    this.frank = this.signers[4]
+    this.holderDepositToken = this.signers[5]
+
+    this.deposit = BigNumber.from("10000")
+    this.aliceFirstDeposit = this.deposit.mul("2")
+    this.aliceSecondDeposit = this.deposit.mul("4")
+    this.bobDeposit = this.deposit.mul("25").div("10")
+    this.danDeposit = this.deposit
+    this.frankDeposit = this.deposit.mul("5").div("10")
+
+    this.aliceFee1 = this.aliceFirstDeposit.mul("50").div("10000")
+    this.aliceFee2 = this.aliceSecondDeposit.mul("50").div("10000")
+    this.bobFee = this.bobDeposit.mul("50").div("10000")
+    this.danFee = this.danDeposit.mul("50").div("10000")
+    this.frankFee = this.frankDeposit.mul("50").div("10000")
+
+    this.tokenFactory = await ethers.getContractFactory("UniFi")
+    this.poolFactory = await ethers.getContractFactory("UniFiDaiVaultMock")
   })
 
-  beforeEach(async function () {
-    this.depositToken = await this.token.deploy("UniFi", "UniFi", this.owner.address)
-    this.rewardToken = await this.token.deploy("DAO2", "DAO2", this.owner.address)
-    this.pool = await this.contract.deploy(this.depositToken.address, this.rewardToken.address)
-
-    this.alice_deposit = BigNumber.from("10000")
-    this.half_alice_deposit = this.alice_deposit.div("2")
-
-    await this.depositToken.transfer(this.alice.address, this.alice_deposit)
-    await this.depositToken.connect(this.alice).approve(this.pool.address, this.alice_deposit)
-
-    owner_balance = await this.depositToken.balanceOf(this.owner.address)
-    await this.depositToken.transfer(this.bob.address, owner_balance)
-
-    await this.pool.connect(this.alice).deposit(this.alice_deposit)
-  })
-
-  it("should be deployed", async function () {
-    const deployed = await this.pool.deployed()
-    expect(deployed, true)
-  })
-
-  it("should have correct state variables", async function () {
-    expect(await this.pool.owner()).to.equal(this.owner.address)
-  })
-
-  it("function getHoldersList()", async function () {
-    getHoldersList_after = await this.pool.getHoldersList(0, 1)
-    block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
-
-    stakers = getHoldersList_after["stakers"][0]
-    stakingTimestamps = getHoldersList_after["stakingTimestamps"][0]
-    lastClaimedTimeStamps = getHoldersList_after["lastClaimedTimeStamps"][0]
-    stakedTokens = getHoldersList_after["stakedTokens"][0]
-
-    expect(stakers).to.equal(this.alice.address)
-    expect(stakingTimestamps).to.equal(block.timestamp)
-    expect(lastClaimedTimeStamps).to.equal(block.timestamp)
-    expect(stakedTokens).to.equal(this.alice_deposit.sub(this.alice_deposit.mul("50").div("10000")))
-  })
-
-  it("reward logic", async function () {
-    twoSign = this.signers[3]
-    threeSign = this.signers[4]
-    fourSign = this.signers[5]
-
-    two_deposit = this.alice_deposit.mul("6")
-    three_deposit = this.alice_deposit.mul("25").div("10")
-    four_deposit = this.alice_deposit.mul("5").div("10")
-
-    await this.depositToken.connect(this.bob).transfer(twoSign.address, two_deposit)
-    await this.depositToken.connect(this.bob).transfer(threeSign.address, three_deposit)
-    await this.depositToken.connect(this.bob).transfer(fourSign.address, four_deposit)
-
-    await this.depositToken.connect(twoSign).approve(this.pool.address, two_deposit)
-    await this.depositToken.connect(threeSign).approve(this.pool.address, three_deposit)
-    await this.depositToken.connect(fourSign).approve(this.pool.address, four_deposit)
-
-    await this.pool.connect(twoSign).deposit(two_deposit)
-    await this.pool.connect(threeSign).deposit(three_deposit)
-    await this.pool.connect(fourSign).deposit(four_deposit)
-
-    total_tokens = two_deposit.add(three_deposit).add(four_deposit).add(this.alice_deposit)
-    total_reward = BigNumber.from("100")
-    await this.rewardToken.approve(this.pool.address, total_reward)
-    await this.pool.addContractBalance(total_reward)
-
-    await this.pool.connect(this.alice).claim()
-    await this.pool.connect(twoSign).claim()
-    await this.pool.connect(threeSign).claim()
-    await this.pool.connect(fourSign).claim()
-
-    alice_reward = await this.rewardToken.balanceOf(this.alice.address)
-    two_reward = await this.rewardToken.balanceOf(twoSign.address)
-    three_reward = await this.rewardToken.balanceOf(threeSign.address)
-    four_reward = await this.rewardToken.balanceOf(fourSign.address)
-
-    expect(this.alice_deposit.mul(total_reward).div(total_tokens).sub("1")).to.equal(alice_reward) // 1 is lost during calculations reward
-    expect(two_deposit.mul(total_reward).div(total_tokens).sub("1")).to.equal(two_reward) // 1 is lost during calculations reward
-    expect(three_deposit.mul(total_reward).div(total_tokens).sub("1")).to.equal(three_reward) // 1 is lost during calculations reward
-    expect(four_deposit.mul(total_reward).div(total_tokens).sub("1")).to.equal(four_reward) // 1 is lost during calculations reward
-  })
-
-  describe("function claim()", function () {
-    it("transfers reward tokens to the user", async function () {
-      balance = 1000
-      await this.rewardToken.approve(this.pool.address, balance)
-      await this.pool.addContractBalance(balance)
-
-      await this.pool.connect(this.alice).claim()
-      alice_reward_balance = await this.rewardToken.balanceOf(this.alice.address)
-
-      expect(balance - 1).to.equal(alice_reward_balance) // 1 is lost during calculations reward
+  describe("Deployed", function () {
+    beforeEach(async function () {
+      this.depositToken = await this.tokenFactory.deploy("UniFi", "UniFi", this.owner.address)
+      this.rewardToken = await this.tokenFactory.deploy("DAO2", "DAO2", this.owner.address)
+      this.pool = await this.poolFactory.deploy(this.depositToken.address, this.rewardToken.address)
     })
 
-    it("increase totalEarnedTokens when receiving reward funds", async function () {
-      total_before_claim = await this.pool.totalEarnedTokens(this.alice.address)
-      expect(0).to.equal(total_before_claim)
-
-      balance = 1000
-      await this.rewardToken.approve(this.pool.address, balance)
-      await this.pool.addContractBalance(balance)
-
-      await this.pool.connect(this.alice).claim()
-      alice_reward_balance = await this.rewardToken.balanceOf(this.alice.address)
-      total_after_claim = await this.pool.totalEarnedTokens(this.alice.address)
-
-      expect(total_after_claim).to.equal(alice_reward_balance)
+    it("should be deployed", async function () {
+      const deployed = await this.pool.deployed()
+      expect(deployed, true)
     })
 
-    it("increasing the lastClaimedTime when claim", async function () {
-      await this.pool.connect(this.alice).claim()
-      lastClaimedTime = await this.pool.lastClaimedTime(this.alice.address)
+    it("should have correct state variables", async function () {
+      expect(await this.pool.owner()).to.equal(this.owner.address)
+      expect(await this.pool.trustedDepositTokenAddress()).to.equal(this.depositToken.address)
+      expect(await this.pool.trustedRewardTokenAddress()).to.equal(this.rewardToken.address)
+      expect(await this.pool.LOCKUP_TIME()).to.equal(days.mul("120"))
+      expect(await this.pool.STAKING_FEE_RATE_X_100()).to.equal("50")
+      expect(await this.pool.UNSTAKING_FEE_RATE_X_100()).to.equal("50")
+      expect(await this.pool.disburseAmount()).to.equal(BigNumber.from("8100000000000000000000"))
+      expect(await this.pool.disburseDuration()).to.equal(days.mul("180"))
+      expect(await this.pool.adminCanClaimAfter()).to.equal(days.mul("200"))
+      expect(await this.pool.disbursePercentX100()).to.equal("10000")
       block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
-      expect(lastClaimedTime).to.equal(block.timestamp)
-    })
-  })
-
-  describe("function deposit()", function () {
-    it("deposit token on stake contract", async function () {
-      contract_balance = await this.depositToken.balanceOf(this.pool.address)
-      expected_balance = this.alice_deposit.sub(this.alice_deposit.mul("50").div("10000"))
-      expect(expected_balance).to.equal(contract_balance)
-    })
-
-    it("increase in the total number of deposit tokens during the deposit", async function () {
-      contract_balance = await this.pool.totalTokens()
-      expected_balance = this.alice_deposit.sub(this.alice_deposit.mul("50").div("10000"))
-      expect(expected_balance).to.equal(contract_balance)
+      expect(await this.pool.contractDeployTime()).to.equal(block.timestamp)
+      expect(await this.pool.adminClaimableTime()).to.equal(days.mul("200").add(block.timestamp))
+      expect(await this.pool.lastDisburseTime()).to.equal(await this.pool.contractDeployTime())
+      expect(await this.pool.totalClaimedRewards()).to.equal("0")
+      expect(await this.pool.totalTokensDisbursed()).to.equal("0")
+      expect(await this.pool.contractBalance()).to.equal("0")
+      expect(await this.pool.totalDivPoints()).to.equal("0")
+      expect(await this.pool.totalTokens()).to.equal("0")
+      expect(await this.pool.getNumberOfHolders()).to.equal("0")
+      await expect(this.pool.getHoldersList(0, 1)).to.be.reverted
     })
 
-    it("creating a position for the user", async function () {
-      deposit = await this.pool.depositedTokens(this.alice.address)
-      depositTime = await this.pool.depositTime(this.alice.address)
-      block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
-      expect(block.timestamp).to.equal(depositTime._hex)
-      expected_deposit = this.alice_deposit.sub(this.alice_deposit.mul("50").div("10000"))
-      expect(deposit).to.equal(expected_deposit)
-    })
-
-    it("owner receives fee for the deposit", async function () {
-      ownerBalance = await this.depositToken.balanceOf(this.owner.address)
-      balance = this.alice_deposit.mul("50").div("10000")
-      expect(ownerBalance).to.equal(balance)
-    })
-    describe("second holder deposit", function () {
-      beforeEach(async function () {
-        getNumberOfHolders_before = await this.pool.getNumberOfHolders()
-        await this.depositToken.connect(this.bob).approve(this.pool.address, this.alice_deposit)
-        await this.pool.connect(this.bob).deposit(this.alice_deposit)
-        getNumberOfHolders_after = await this.pool.getNumberOfHolders()
-      })
-
-      describe("increasing getNumberOfHolders(), getHoldersList() on deposit ", function () {
-        it("increasing getNumberOfHolders when deposit", async function () {
-          expect(getNumberOfHolders_before.add(1)).to.equal(getNumberOfHolders_after)
-        })
-
-        it("increasing getHoldersList when deposit", async function () {
-          getHoldersList_after = await this.pool.getHoldersList(0, getNumberOfHolders_after)
-          stakers_length = getHoldersList_after["stakers"].length
-          stakingTimestamps_length = getHoldersList_after["stakingTimestamps"].length
-          lastClaimedTimeStamps_length = getHoldersList_after["lastClaimedTimeStamps"].length
-          stakedTokens_length = getHoldersList_after["stakedTokens"].length
-          expect(stakers_length).to.equal(getNumberOfHolders_after)
-          expect(stakingTimestamps_length).to.equal(getNumberOfHolders_after)
-          expect(lastClaimedTimeStamps_length).to.equal(getNumberOfHolders_after)
-          expect(stakedTokens_length).to.equal(getNumberOfHolders_after)
-        })
-      })
-
-      describe("decreasing getNumberOfHolders(), getHoldersList() on withdraw ", function () {
-        beforeEach(async function () {
-          LOCKUP_TIME = await this.pool.LOCKUP_TIME()
-          await network.provider.send("evm_increaseTime", [parseInt(LOCKUP_TIME) + 1])
-        })
-        describe("func withdraw()", function () {
-          it("decreasing getNumberOfHolders when withdraw all holder deposit", async function () {
-            getNumberOfHolders_before = await this.pool.getNumberOfHolders()
-            await this.pool.connect(this.alice).withdraw(this.alice_deposit.sub(this.alice_deposit.mul("50").div("10000")))
-            getNumberOfHolders_after = await this.pool.getNumberOfHolders()
-            expect(getNumberOfHolders_before.sub("1")).to.equal(getNumberOfHolders_after)
-          })
-
-          it("decreasing getHoldersList when withdraw", async function () {
-            await this.pool.connect(this.alice).withdraw(this.alice_deposit.sub(this.alice_deposit.mul("50").div("10000")))
-            getHoldersList_after = await this.pool.getHoldersList(0, getNumberOfHolders_after.sub("1"))
-
-            stakers_length = getHoldersList_after["stakers"].length
-            stakingTimestamps_length = getHoldersList_after["stakingTimestamps"].length
-            lastClaimedTimeStamps_length = getHoldersList_after["lastClaimedTimeStamps"].length
-            stakedTokens_length = getHoldersList_after["stakedTokens"].length
-            expected_length = getNumberOfHolders_after.sub("1")
-
-            expect(stakers_length).to.equal(expected_length)
-            expect(stakingTimestamps_length).to.equal(expected_length)
-            expect(lastClaimedTimeStamps_length).to.equal(expected_length)
-            expect(stakedTokens_length).to.equal(expected_length)
-          })
-        })
-
-        describe("func emergencyWithdraw()", function () {
-          it("decreasing getNumberOfHolders when emergencyWithdraw all holder deposit", async function () {
-            lastClaimedTime_before = await this.pool.getNumberOfHolders()
-            await this.pool.connect(this.alice).emergencyWithdraw(this.alice_deposit.sub(this.alice_deposit.mul("50").div("10000")))
-            lastClaimedTime_after = await this.pool.getNumberOfHolders()
-            expect(lastClaimedTime_before.sub("1")).to.equal(lastClaimedTime_after)
-          })
-
-          it("decreasing getHoldersList when emergencyWithdraw", async function () {
-            await this.pool.connect(this.alice).emergencyWithdraw(this.alice_deposit.sub(this.alice_deposit.mul("50").div("10000")))
-            getHoldersList_after = await this.pool.getHoldersList(0, getNumberOfHolders_after.sub("1"))
-
-            stakers_length = getHoldersList_after["stakers"].length
-            stakingTimestamps_length = getHoldersList_after["stakingTimestamps"].length
-            lastClaimedTimeStamps_length = getHoldersList_after["lastClaimedTimeStamps"].length
-            stakedTokens_length = getHoldersList_after["stakedTokens"].length
-            expected_length = getNumberOfHolders_after.sub("1")
-
-            expect(stakers_length).to.equal(expected_length)
-            expect(stakingTimestamps_length).to.equal(expected_length)
-            expect(lastClaimedTimeStamps_length).to.equal(expected_length)
-            expect(stakedTokens_length).to.equal(expected_length)
-          })
-        })
-      })
-    })
-
-    it("getting a reward for not the first deposits", async function () {
-      await this.depositToken.connect(this.bob).transfer(this.alice.address, this.alice_deposit)
-      await this.depositToken.connect(this.alice).approve(this.pool.address, this.alice_deposit)
-
-      balance = 1000
-      await this.rewardToken.approve(this.pool.address, balance)
-      await this.pool.addContractBalance(balance)
-
-      await this.pool.connect(this.alice).deposit(this.alice_deposit)
-      alice_reward_balance = await this.rewardToken.balanceOf(this.alice.address)
-
-      expect(balance - 1).to.equal(alice_reward_balance) // 1 is lost during calculations reward
-    })
-
-    it("can't deposit 0 token", async function () {
+    it("impossible deposit 0 token", async function () {
       await expect(this.pool.deposit(0)).to.be.revertedWith("Cannot deposit 0 Tokens")
     })
 
-    it("can't deposit more than the balance", async function () {
-      await expect(this.pool.deposit(10000)).to.be.revertedWith("ERC20: transfer amount exceeds balance")
+    it("impossible deposit more than the balance", async function () {
+      await expect(this.pool.connect(this.alice).deposit(1)).to.be.revertedWith("ERC20: transfer amount exceeds balance")
     })
 
-    it("not possible to make a deposit after the specified days from the date of creation of the contract", async function () {
-      disburseDuration = await this.pool.disburseDuration()
-      LOCKUP_TIME = await this.pool.LOCKUP_TIME()
-      work_contract_time = disburseDuration - LOCKUP_TIME
-      await network.provider.send("evm_increaseTime", [work_contract_time + 1])
-      await expect(this.pool.deposit(this.alice_deposit)).to.be.revertedWith("Deposits are closed now!")
-    })
-  })
-
-  describe("function withdraw()", function () {
-    it("can't withdraw 0 token", async function () {
-      await expect(this.pool.withdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens")
-    })
-
-    it("you can't withdraw until the stake period has passed", async function () {
-      await expect(this.pool.connect(this.alice).withdraw(5000)).to.be.revertedWith("You recently staked, please wait before withdrawing.")
-    })
-
-    describe("Stake period has passed", function () {
+    describe("Owner add reward token on contract", async function () {
       beforeEach(async function () {
-        LOCKUP_TIME = await this.pool.LOCKUP_TIME()
-        await network.provider.send("evm_increaseTime", [parseInt(LOCKUP_TIME) + 1])
+        await this.rewardToken.approve(this.pool.address, "5400000000000000000000")
+        await this.pool.addContractBalance("5400000000000000000000")
       })
 
-      it("you can't withdraw more than you have on the balance sheet", async function () {
-        await expect(this.pool.connect(this.alice).withdraw(this.alice_deposit)).to.be.revertedWith("Invalid amount to withdraw")
+      it("function addContractBalance only owner", async function () {
+        await expect(this.pool.connect(this.alice).addContractBalance(100)).to.be.revertedWith("Ownable: caller is not the owner")
       })
 
-      it("withdraw when stake period has passed", async function () {
-        await this.pool.connect(this.alice).withdraw(this.half_alice_deposit)
-        contract_balance = await this.depositToken.balanceOf(this.pool.address)
-        holder_balance = await this.depositToken.balanceOf(this.alice.address)
-        pool_balance = await this.pool.depositedTokens(this.alice.address)
-
-        expected_balance = this.alice_deposit.sub(this.half_alice_deposit).sub(this.alice_deposit.mul("50").div("10000"))
-        expected_holder_balance = this.half_alice_deposit.sub(this.half_alice_deposit.mul("50").div("10000"))
-
-        expect(contract_balance).to.equal(expected_balance)
-        expect(holder_balance).to.equal(expected_holder_balance)
-        expect(pool_balance).to.equal(expected_balance)
+      it("increase contractBalance", async function () {
+        const balance = await this.rewardToken.balanceOf(this.pool.address)
+        const contractBalance = await this.pool.contractBalance()
+        expect(balance).to.equal("5400000000000000000000")
+        expect(contractBalance).to.equal("5400000000000000000000")
       })
 
-      it("owner receives fee for the withdraw", async function () {
-        await this.pool.connect(this.alice).withdraw(this.half_alice_deposit)
-        ownerBalance = await this.depositToken.balanceOf(this.owner.address)
+      describe("After approve and first Alice deposit", function () {
+        beforeEach(async function () {
+          ownerBalance = await this.depositToken.balanceOf(this.owner.address)
+          await this.depositToken.transfer(this.holderDepositToken.address, ownerBalance) // for easier comparison of the commission received by the owner
 
-        deposit_fee = this.alice_deposit.mul("50").div("10000")
-        withdraw_fee = this.half_alice_deposit.mul("50").div("10000")
-        fee = deposit_fee.add(withdraw_fee)
+          await this.depositToken
+            .connect(this.holderDepositToken)
+            .transfer(this.alice.address, this.aliceFirstDeposit.add(this.aliceSecondDeposit))
+          await this.depositToken.connect(this.alice).approve(this.pool.address, this.aliceFirstDeposit)
+          await this.pool.connect(this.alice).deposit(this.aliceFirstDeposit)
+          expectedBalance = this.aliceFirstDeposit.sub(this.aliceFee1)
+        })
 
-        expect(ownerBalance).to.equal(fee)
+        it("increasing getNumberOfHolders", async function () {
+          getNumberOfHolders = await this.pool.getNumberOfHolders()
+          expect(1).to.equal(getNumberOfHolders)
+        })
+
+        it("new holder and values of his deposit in getHoldersList()", async function () {
+          const len = 1
+          const expectedDeposit = this.aliceFirstDeposit.sub(this.aliceFee1)
+
+          getHoldersList = await this.pool.getHoldersList(0, len)
+          block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+
+          stakers = getHoldersList["stakers"]
+          stakingTimestamps = getHoldersList["stakingTimestamps"]
+          lastClaimedTimeStamps = getHoldersList["lastClaimedTimeStamps"]
+          stakedTokens = getHoldersList["stakedTokens"]
+
+          expect(stakers.length).to.equal(len)
+          expect(stakingTimestamps.length).to.equal(len)
+          expect(lastClaimedTimeStamps.length).to.equal(len)
+          expect(stakedTokens.length).to.equal(len)
+
+          expect(stakers[0]).to.equal(this.alice.address)
+          expect(stakingTimestamps[0]).to.equal(block.timestamp)
+          expect(lastClaimedTimeStamps[0]).to.equal(block.timestamp)
+          expect(stakedTokens[0]).to.equal(expectedDeposit)
+        })
+
+        it("impossible to make a second deposit without approve", async function () {
+          await expect(this.pool.connect(this.alice).deposit(this.aliceSecondDeposit)).to.be.revertedWith(
+            "ERC20: transfer amount exceeds allowance"
+          )
+        })
+
+        it("increasing balance of depositToken on the contract", async function () {
+          const contractBalance = await this.depositToken.balanceOf(this.pool.address)
+          expect(contractBalance).to.equal(expectedBalance)
+        })
+
+        it("increase totalTokens", async function () {
+          const contractBalance = await this.pool.totalTokens()
+          expect(contractBalance).to.equal(expectedBalance)
+        })
+
+        it("creating a position for Alice", async function () {
+          const deposit = await this.pool.depositedTokens(this.alice.address)
+          const depositTime = await this.pool.depositTime(this.alice.address)
+          const block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+          const expectedDeposit = this.aliceFirstDeposit.sub(this.aliceFee1)
+
+          expect(block.timestamp).to.equal(depositTime._hex)
+          expect(deposit).to.equal(expectedDeposit)
+        })
+
+        it("owner receives fee for the deposit", async function () {
+          const ownerBalance = await this.depositToken.balanceOf(this.owner.address)
+          const balance = this.aliceFee1
+          expect(ownerBalance).to.equal(balance)
+        })
+
+        it("impossible emergencyWithdraw", async function () {
+          await expect(this.pool.connect(this.alice).emergencyWithdraw(this.aliceFirstDeposit)).to.be.revertedWith(
+            "You recently staked, please wait before withdrawing."
+          )
+        })
+
+        it("impossible withdraw", async function () {
+          await expect(this.pool.connect(this.alice).withdraw(this.aliceFirstDeposit)).to.be.revertedWith(
+            "You recently staked, please wait before withdrawing."
+          )
+        })
+
+        it("increase getEstimatedPendingDivs", async function () {
+          await this.pool.connect(this.signers[10]).claim() // an insignificant operation, moves to the next block in which the parameters are changed
+          this.aliceEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.alice.address)
+          expect(this.aliceEstimatedPendingDivs).to.be.above(0)
+        })
+
+        describe("After possible function claim()", function () {
+          beforeEach(async function () {
+            totalEarnedTokensBeforeClaim = await this.pool.totalEarnedTokens(this.frank.address)
+            await this.pool.connect(this.alice).claim()
+          })
+
+          it("resetting getEstimatedPendingDivs", async function () {
+            await this.pool.connect(this.alice).claim()
+            expect(await this.pool.getEstimatedPendingDivs(this.alice.address)).to.equal(0)
+
+            await this.pool.connect(this.bob).claim()
+            expect(await this.pool.getEstimatedPendingDivs(this.bob.address)).to.equal(0)
+
+            await this.pool.connect(this.dan).claim()
+            expect(await this.pool.getEstimatedPendingDivs(this.dan.address)).to.equal(0)
+
+            await this.pool.connect(this.frank).claim()
+            expect(await this.pool.getEstimatedPendingDivs(this.frank.address)).to.equal(0)
+          })
+
+          it("reward is accrued", async function () {
+            const aliceRewardBalance = await this.rewardToken.balanceOf(this.alice.address)
+            expect(aliceRewardBalance).to.be.above(0)
+          })
+
+          it("increase totalEarnedTokens when receiving reward funds", async function () {
+            expect(0).to.equal(totalEarnedTokensBeforeClaim)
+            const aliceRewardBalance = await this.rewardToken.balanceOf(this.alice.address)
+            const aliceTotalAfterClaim = await this.pool.totalEarnedTokens(this.alice.address)
+            expect(aliceRewardBalance).to.be.above(0)
+            expect(aliceTotalAfterClaim).to.be.above(0)
+          })
+
+          it("increasing the lastClaimedTime when claim", async function () {
+            const aliceLastClaimedTime = await this.pool.lastClaimedTime(this.alice.address)
+            const block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+            expect(BigNumber.from(aliceLastClaimedTime)._hex).to.equal(block.timestamp)
+          })
+        })
+
+        describe("After Bob deposited", function () {
+          beforeEach(async function () {
+            await this.depositToken.connect(this.holderDepositToken).transfer(this.bob.address, this.bobDeposit)
+            await this.depositToken.connect(this.bob).approve(this.pool.address, this.bobDeposit)
+            await this.pool.connect(this.bob).deposit(this.bobDeposit)
+            expectedBalance = this.aliceFirstDeposit.add(this.bobDeposit).sub(this.aliceFee1).sub(this.bobFee)
+          })
+
+          it("increasing getNumberOfHolders", async function () {
+            getNumberOfHolders = await this.pool.getNumberOfHolders()
+            expect(2).to.equal(getNumberOfHolders)
+          })
+
+          it("new holder and values of his deposit in getHoldersList()", async function () {
+            const len = 2
+            const expectedDeposit = this.bobDeposit.sub(this.bobFee)
+
+            getHoldersList = await this.pool.getHoldersList(0, len)
+            block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+
+            stakers = getHoldersList["stakers"]
+            stakingTimestamps = getHoldersList["stakingTimestamps"]
+            lastClaimedTimeStamps = getHoldersList["lastClaimedTimeStamps"]
+            stakedTokens = getHoldersList["stakedTokens"]
+
+            expect(stakers.length).to.equal(len)
+            expect(stakingTimestamps.length).to.equal(len)
+            expect(lastClaimedTimeStamps.length).to.equal(len)
+            expect(stakedTokens.length).to.equal(len)
+
+            expect(stakers[len - 1]).to.equal(this.bob.address)
+            expect(stakingTimestamps[len - 1]).to.equal(block.timestamp)
+            expect(lastClaimedTimeStamps[len - 1]).to.equal(block.timestamp)
+            expect(stakedTokens[len - 1]).to.equal(expectedDeposit)
+          })
+
+          it("increasing balance of depositToken on the contract", async function () {
+            const contractBalance = await this.depositToken.balanceOf(this.pool.address)
+            expect(contractBalance).to.equal(expectedBalance)
+          })
+
+          it("increase totalTokens", async function () {
+            const contractBalance = await this.pool.totalTokens()
+            expect(contractBalance).to.equal(expectedBalance)
+          })
+
+          it("create Bob position", async function () {
+            const deposit = await this.pool.depositedTokens(this.bob.address)
+            const depositTime = await this.pool.depositTime(this.bob.address)
+            const block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+            const expectedDeposit = this.bobDeposit.sub(this.bobFee)
+
+            expect(block.timestamp).to.equal(depositTime._hex)
+            expect(deposit).to.equal(expectedDeposit)
+          })
+
+          it("owner receives fee for the deposit", async function () {
+            const ownerBalance = await this.depositToken.balanceOf(this.owner.address)
+            const balance = this.aliceFee1.add(this.bobFee)
+            expect(ownerBalance).to.equal(balance)
+          })
+
+          it("impossible emergencyWithdraw", async function () {
+            await expect(this.pool.connect(this.bob).emergencyWithdraw(this.bobDeposit)).to.be.revertedWith(
+              "You recently staked, please wait before withdrawing."
+            )
+          })
+
+          it("impossible withdraw", async function () {
+            await expect(this.pool.connect(this.bob).withdraw(this.bobDeposit)).to.be.revertedWith(
+              "You recently staked, please wait before withdrawing."
+            )
+          })
+
+          it("increase getEstimatedPendingDivs", async function () {
+            await this.pool.connect(this.signers[10]).claim() // an insignificant operation, moves to the next block in which the parameters are changed
+            expect(await this.pool.getEstimatedPendingDivs(this.alice.address)).to.be.above(this.aliceEstimatedPendingDivs)
+            expect(await this.pool.getEstimatedPendingDivs(this.bob.address)).to.be.above(0)
+
+            this.aliceEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.alice.address)
+            this.bobEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.bob.address)
+          })
+
+          describe("After possible function claim()", function () {
+            beforeEach(async function () {
+              totalEarnedTokensBeforeClaim = await this.pool.totalEarnedTokens(this.frank.address)
+              await this.pool.connect(this.alice).claim()
+              block1 = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+              await this.pool.connect(this.bob).claim()
+              block2 = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+            })
+
+            it("resetting getEstimatedPendingDivs", async function () {
+              await this.pool.connect(this.alice).claim()
+              expect(await this.pool.getEstimatedPendingDivs(this.alice.address)).to.equal(0)
+
+              await this.pool.connect(this.bob).claim()
+              expect(await this.pool.getEstimatedPendingDivs(this.bob.address)).to.equal(0)
+
+              await this.pool.connect(this.dan).claim()
+              expect(await this.pool.getEstimatedPendingDivs(this.dan.address)).to.equal(0)
+
+              await this.pool.connect(this.frank).claim()
+              expect(await this.pool.getEstimatedPendingDivs(this.frank.address)).to.equal(0)
+            })
+
+            it("reward is accrued", async function () {
+              const aliceRewardBalance = await this.rewardToken.balanceOf(this.alice.address)
+              expect(aliceRewardBalance).to.be.above(0)
+              const bobRewardBalance = await this.rewardToken.balanceOf(this.bob.address)
+              expect(bobRewardBalance).to.be.above(0)
+            })
+
+            it("increase totalEarnedTokens when receiving reward funds", async function () {
+              expect(0).to.equal(totalEarnedTokensBeforeClaim)
+              const aliceRewardBalance = await this.rewardToken.balanceOf(this.alice.address)
+              const aliceTotalAfterClaim = await this.pool.totalEarnedTokens(this.alice.address)
+              expect(aliceRewardBalance).to.be.above(0)
+              expect(aliceTotalAfterClaim).to.be.above(0)
+              const bobRewardBalance = await this.rewardToken.balanceOf(this.bob.address)
+              const bobTotalAfterClaim = await this.pool.totalEarnedTokens(this.bob.address)
+              expect(bobRewardBalance).to.be.above(0)
+              expect(bobTotalAfterClaim).to.be.above(0)
+            })
+
+            it("increasing the lastClaimedTime when claim", async function () {
+              const aliceLastClaimedTime = await this.pool.lastClaimedTime(this.alice.address)
+              const bobLastClaimedTime = await this.pool.lastClaimedTime(this.bob.address)
+
+              expect(BigNumber.from(aliceLastClaimedTime)._hex).to.equal(block1.timestamp)
+              expect(BigNumber.from(bobLastClaimedTime)._hex).to.equal(block2.timestamp)
+            })
+          })
+          describe("After Dan deposited", function () {
+            beforeEach(async function () {
+              //LOCKUP_TIME = await this.pool.LOCKUP_TIME()
+              //await network.provider.send("evm_increaseTime", [parseInt(LOCKUP_TIME)/2 + 1])
+              await this.depositToken.connect(this.holderDepositToken).transfer(this.dan.address, this.danDeposit)
+              await this.depositToken.connect(this.dan).approve(this.pool.address, this.danDeposit)
+              await this.pool.connect(this.dan).deposit(this.danDeposit)
+              expectedBalance = this.aliceFirstDeposit
+                .add(this.bobDeposit)
+                .add(this.danDeposit)
+                .sub(this.aliceFee1)
+                .sub(this.bobFee)
+                .sub(this.danFee)
+            })
+
+            it("increasing getNumberOfHolders", async function () {
+              getNumberOfHolders = await this.pool.getNumberOfHolders()
+              expect(3).to.equal(getNumberOfHolders)
+            })
+
+            it("new holder and values of his deposit in getHoldersList()", async function () {
+              const len = 3
+              const expectedDeposit = this.danDeposit.sub(this.danFee)
+
+              getHoldersList = await this.pool.getHoldersList(0, len)
+              block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+
+              stakers = getHoldersList["stakers"]
+              stakingTimestamps = getHoldersList["stakingTimestamps"]
+              lastClaimedTimeStamps = getHoldersList["lastClaimedTimeStamps"]
+              stakedTokens = getHoldersList["stakedTokens"]
+
+              expect(stakers.length).to.equal(len)
+              expect(stakingTimestamps.length).to.equal(len)
+              expect(lastClaimedTimeStamps.length).to.equal(len)
+              expect(stakedTokens.length).to.equal(len)
+
+              expect(stakers[len - 1]).to.equal(this.dan.address)
+              expect(stakingTimestamps[len - 1]).to.equal(block.timestamp)
+              expect(lastClaimedTimeStamps[len - 1]).to.equal(block.timestamp)
+              expect(stakedTokens[len - 1]).to.equal(expectedDeposit)
+            })
+
+            it("increasing balance of depositToken on the contract", async function () {
+              const contractBalance = await this.depositToken.balanceOf(this.pool.address)
+              expect(contractBalance).to.equal(expectedBalance)
+            })
+
+            it("increase totalTokens", async function () {
+              const contractBalance = await this.pool.totalTokens()
+              expect(contractBalance).to.equal(expectedBalance)
+            })
+
+            it("create Dan position", async function () {
+              const deposit = await this.pool.depositedTokens(this.dan.address)
+              const depositTime = await this.pool.depositTime(this.dan.address)
+              const block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+              const expectedDeposit = this.danDeposit.sub(this.danFee)
+
+              expect(block.timestamp).to.equal(depositTime._hex)
+              expect(deposit).to.equal(expectedDeposit)
+            })
+
+            it("owner receives fee for the deposit", async function () {
+              const ownerBalance = await this.depositToken.balanceOf(this.owner.address)
+              const balance = this.aliceFee1.add(this.bobFee).add(this.danFee)
+              expect(ownerBalance).to.equal(balance)
+            })
+
+            it("impossible emergencyWithdraw", async function () {
+              await expect(this.pool.connect(this.dan).emergencyWithdraw(this.danDeposit)).to.be.revertedWith(
+                "You recently staked, please wait before withdrawing."
+              )
+            })
+
+            it("impossible withdraw", async function () {
+              await expect(this.pool.connect(this.dan).withdraw(this.danDeposit)).to.be.revertedWith(
+                "You recently staked, please wait before withdrawing."
+              )
+            })
+
+            it("increase getEstimatedPendingDivs", async function () {
+              await this.pool.connect(this.signers[10]).claim() // an insignificant operation, moves to the next block in which the parameters are changed
+              expect(await this.pool.getEstimatedPendingDivs(this.alice.address)).to.be.above(this.aliceEstimatedPendingDivs)
+              expect(await this.pool.getEstimatedPendingDivs(this.bob.address)).to.be.above(this.bobEstimatedPendingDivs)
+              expect(await this.pool.getEstimatedPendingDivs(this.dan.address)).to.be.above(0)
+
+              this.aliceEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.alice.address)
+              this.bobEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.bob.address)
+              this.danEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.dan.address)
+            })
+
+            describe("After possible function claim()", function () {
+              beforeEach(async function () {
+                totalEarnedTokensBeforeClaim = await this.pool.totalEarnedTokens(this.frank.address)
+                await this.pool.connect(this.alice).claim()
+                block1 = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+                await this.pool.connect(this.bob).claim()
+                block2 = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+                await this.pool.connect(this.dan).claim()
+                block3 = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+              })
+
+              it("resetting getEstimatedPendingDivs", async function () {
+                await this.pool.connect(this.alice).claim()
+                expect(await this.pool.getEstimatedPendingDivs(this.alice.address)).to.equal(0)
+
+                await this.pool.connect(this.bob).claim()
+                expect(await this.pool.getEstimatedPendingDivs(this.bob.address)).to.equal(0)
+
+                await this.pool.connect(this.dan).claim()
+                expect(await this.pool.getEstimatedPendingDivs(this.dan.address)).to.equal(0)
+
+                await this.pool.connect(this.frank).claim()
+                expect(await this.pool.getEstimatedPendingDivs(this.frank.address)).to.equal(0)
+              })
+
+              it("reward is accrued", async function () {
+                const aliceRewardBalance = await this.rewardToken.balanceOf(this.alice.address)
+                expect(aliceRewardBalance).to.be.above(0)
+                const bobRewardBalance = await this.rewardToken.balanceOf(this.bob.address)
+                expect(bobRewardBalance).to.be.above(0)
+                const danRewardBalance = await this.rewardToken.balanceOf(this.dan.address)
+                expect(danRewardBalance).to.be.above(0)
+              })
+
+              it("increase totalEarnedTokens when receiving reward funds", async function () {
+                expect(0).to.equal(totalEarnedTokensBeforeClaim)
+                const aliceRewardBalance = await this.rewardToken.balanceOf(this.alice.address)
+                const aliceTotalAfterClaim = await this.pool.totalEarnedTokens(this.alice.address)
+                expect(aliceRewardBalance).to.be.above(0)
+                expect(aliceTotalAfterClaim).to.be.above(0)
+                const bobRewardBalance = await this.rewardToken.balanceOf(this.bob.address)
+                const bobTotalAfterClaim = await this.pool.totalEarnedTokens(this.bob.address)
+                expect(bobRewardBalance).to.be.above(0)
+                expect(bobTotalAfterClaim).to.be.above(0)
+                const danRewardBalance = await this.rewardToken.balanceOf(this.dan.address)
+                const danTotalAfterClaim = await this.pool.totalEarnedTokens(this.dan.address)
+                expect(danRewardBalance).to.be.above(0)
+                expect(danTotalAfterClaim).to.be.above(0)
+              })
+
+              it("increasing the lastClaimedTime when claim", async function () {
+                const aliceLastClaimedTime = await this.pool.lastClaimedTime(this.alice.address)
+                const bobLastClaimedTime = await this.pool.lastClaimedTime(this.bob.address)
+                const danLastClaimedTime = await this.pool.lastClaimedTime(this.dan.address)
+
+                expect(BigNumber.from(aliceLastClaimedTime)._hex).to.equal(block1.timestamp)
+                expect(BigNumber.from(bobLastClaimedTime)._hex).to.equal(block2.timestamp)
+                expect(BigNumber.from(danLastClaimedTime)._hex).to.equal(block3.timestamp)
+              })
+            })
+
+            describe("After Frank deposited", function () {
+              beforeEach(async function () {
+                this.frank = this.signers[4]
+                await this.depositToken.connect(this.holderDepositToken).transfer(this.frank.address, this.frankDeposit)
+                await this.depositToken.connect(this.frank).approve(this.pool.address, this.frankDeposit)
+                await this.pool.connect(this.frank).deposit(this.frankDeposit)
+                expectedBalance = this.aliceFirstDeposit
+                  .add(this.bobDeposit)
+                  .add(this.danDeposit)
+                  .add(this.frankDeposit)
+                  .sub(this.aliceFee1)
+                  .sub(this.bobFee)
+                  .sub(this.danFee)
+                  .sub(this.frankFee)
+              })
+
+              it("increasing getNumberOfHolders", async function () {
+                getNumberOfHolders = await this.pool.getNumberOfHolders()
+                expect(4).to.equal(getNumberOfHolders)
+              })
+
+              it("new holder and values of his deposit in getHoldersList()", async function () {
+                const len = 4
+                const expectedDeposit = this.frankDeposit.sub(this.frankFee)
+                getHoldersList = await this.pool.getHoldersList(0, len)
+                block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+
+                stakers = getHoldersList["stakers"]
+                stakingTimestamps = getHoldersList["stakingTimestamps"]
+                lastClaimedTimeStamps = getHoldersList["lastClaimedTimeStamps"]
+                stakedTokens = getHoldersList["stakedTokens"]
+
+                expect(stakers.length).to.equal(len)
+                expect(stakingTimestamps.length).to.equal(len)
+                expect(lastClaimedTimeStamps.length).to.equal(len)
+                expect(stakedTokens.length).to.equal(len)
+
+                expect(stakers[len - 1]).to.equal(this.frank.address)
+                expect(stakingTimestamps[len - 1]).to.equal(block.timestamp)
+                expect(lastClaimedTimeStamps[len - 1]).to.equal(block.timestamp)
+                expect(stakedTokens[len - 1]).to.equal(expectedDeposit)
+              })
+
+              it("increasing balance of depositToken on the contract", async function () {
+                const contractBalance = await this.depositToken.balanceOf(this.pool.address)
+                expect(contractBalance).to.equal(expectedBalance)
+              })
+
+              it("increase totalTokens", async function () {
+                const contractBalance = await this.pool.totalTokens()
+                expect(contractBalance).to.equal(expectedBalance)
+              })
+
+              it("create Dan position", async function () {
+                const deposit = await this.pool.depositedTokens(this.frank.address)
+                const depositTime = await this.pool.depositTime(this.frank.address)
+                const block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+                const expectedDeposit = this.frankDeposit.sub(this.frankFee)
+
+                expect(block.timestamp).to.equal(depositTime._hex)
+                expect(deposit).to.equal(expectedDeposit)
+              })
+
+              it("owner receives fee for the deposit", async function () {
+                const ownerBalance = await this.depositToken.balanceOf(this.owner.address)
+                const balance = this.aliceFee1.add(this.bobFee).add(this.danFee).add(this.frankFee)
+                expect(ownerBalance).to.equal(balance)
+              })
+
+              it("impossible emergencyWithdraw", async function () {
+                await expect(this.pool.connect(this.frank).emergencyWithdraw(this.frankDeposit)).to.be.revertedWith(
+                  "You recently staked, please wait before withdrawing."
+                )
+              })
+
+              it("impossible withdraw", async function () {
+                await expect(this.pool.connect(this.frank).withdraw(this.frankDeposit)).to.be.revertedWith(
+                  "You recently staked, please wait before withdrawing."
+                )
+              })
+
+              it("increase getEstimatedPendingDivs", async function () {
+                await this.pool.connect(this.signers[10]).claim() // an insignificant operation, moves to the next block in which the parameters are changed
+                expect(await this.pool.getEstimatedPendingDivs(this.alice.address)).to.be.above(this.aliceEstimatedPendingDivs)
+                expect(await this.pool.getEstimatedPendingDivs(this.bob.address)).to.be.above(this.bobEstimatedPendingDivs)
+                expect(await this.pool.getEstimatedPendingDivs(this.dan.address)).to.be.above(this.danEstimatedPendingDivs)
+                expect(await this.pool.getEstimatedPendingDivs(this.frank.address)).to.be.above(0)
+
+                this.aliceEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.alice.address)
+                this.bobEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.bob.address)
+                this.danEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.dan.address)
+                this.frankEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.frank.address)
+              })
+
+              describe("After possible function claim()", function () {
+                beforeEach(async function () {
+                  totalEarnedTokensBeforeClaim = await this.pool.totalEarnedTokens(this.frank.address)
+                  await this.pool.connect(this.alice).claim()
+                  block1 = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+                  await this.pool.connect(this.bob).claim()
+                  block2 = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+                  await this.pool.connect(this.dan).claim()
+                  block3 = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+                  await this.pool.connect(this.frank).claim()
+                  block4 = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+                })
+
+                it("resetting getEstimatedPendingDivs", async function () {
+                  await this.pool.connect(this.alice).claim()
+                  expect(await this.pool.getEstimatedPendingDivs(this.alice.address)).to.equal(0)
+
+                  await this.pool.connect(this.bob).claim()
+                  expect(await this.pool.getEstimatedPendingDivs(this.bob.address)).to.equal(0)
+
+                  await this.pool.connect(this.dan).claim()
+                  expect(await this.pool.getEstimatedPendingDivs(this.dan.address)).to.equal(0)
+
+                  await this.pool.connect(this.frank).claim()
+                  expect(await this.pool.getEstimatedPendingDivs(this.frank.address)).to.equal(0)
+                })
+
+                it("reward is accrued", async function () {
+                  const aliceRewardBalance = await this.rewardToken.balanceOf(this.alice.address)
+                  expect(aliceRewardBalance).to.be.above(0)
+                  const bobRewardBalance = await this.rewardToken.balanceOf(this.bob.address)
+                  expect(bobRewardBalance).to.be.above(0)
+                  const danRewardBalance = await this.rewardToken.balanceOf(this.dan.address)
+                  expect(danRewardBalance).to.be.above(0)
+                  const frankRewardBalance = await this.rewardToken.balanceOf(this.frank.address)
+                  expect(frankRewardBalance).to.be.above(0)
+                })
+
+                it("increase totalEarnedTokens when receiving reward funds", async function () {
+                  expect(0).to.equal(totalEarnedTokensBeforeClaim)
+                  const aliceRewardBalance = await this.rewardToken.balanceOf(this.alice.address)
+                  const aliceTotalAfterClaim = await this.pool.totalEarnedTokens(this.alice.address)
+                  expect(aliceRewardBalance).to.be.above(0)
+                  expect(aliceTotalAfterClaim).to.be.above(0)
+                  const bobRewardBalance = await this.rewardToken.balanceOf(this.bob.address)
+                  const bobTotalAfterClaim = await this.pool.totalEarnedTokens(this.bob.address)
+                  expect(bobRewardBalance).to.be.above(0)
+                  expect(bobTotalAfterClaim).to.be.above(0)
+                  const danRewardBalance = await this.rewardToken.balanceOf(this.dan.address)
+                  const danTotalAfterClaim = await this.pool.totalEarnedTokens(this.dan.address)
+                  expect(danRewardBalance).to.be.above(0)
+                  expect(danTotalAfterClaim).to.be.above(0)
+                  const frankRewardBalance = await this.rewardToken.balanceOf(this.frank.address)
+                  const frankTotalAfterClaim = await this.pool.totalEarnedTokens(this.frank.address)
+                  expect(frankRewardBalance).to.be.above(0)
+                  expect(frankTotalAfterClaim).to.be.above(0)
+                })
+
+                it("increasing the lastClaimedTime when claim", async function () {
+                  const aliceLastClaimedTime = await this.pool.lastClaimedTime(this.alice.address)
+                  const bobLastClaimedTime = await this.pool.lastClaimedTime(this.bob.address)
+                  const danLastClaimedTime = await this.pool.lastClaimedTime(this.dan.address)
+                  const frankLastClaimedTime = await this.pool.lastClaimedTime(this.frank.address)
+
+                  expect(BigNumber.from(aliceLastClaimedTime)._hex).to.equal(block1.timestamp)
+                  expect(BigNumber.from(bobLastClaimedTime)._hex).to.equal(block2.timestamp)
+                  expect(BigNumber.from(danLastClaimedTime)._hex).to.equal(block3.timestamp)
+                  expect(BigNumber.from(frankLastClaimedTime)._hex).to.equal(block4.timestamp)
+                })
+              })
+
+              describe("After second Alice deposit", function () {
+                beforeEach(async function () {
+                  //LOCKUP_TIME = await this.pool.LOCKUP_TIME()
+                  //await network.provider.send("evm_increaseTime", [parseInt(LOCKUP_TIME) / 4 + 1])
+                  await this.depositToken.connect(this.alice).approve(this.pool.address, this.aliceSecondDeposit)
+                  //console.log((await this.pool.getEstimatedPendingDivs(this.alice.address)).toString()) =450
+                  await this.pool.connect(this.alice).deposit(this.aliceSecondDeposit)
+                  //console.log((await this.pool.getEstimatedPendingDivs(this.alice.address)).toString()) =0
+                  expectedBalance = this.aliceFirstDeposit
+                    .add(this.aliceSecondDeposit)
+                    .add(this.bobDeposit)
+                    .add(this.danDeposit)
+                    .add(this.frankDeposit)
+                    .sub(this.aliceFee1)
+                    .sub(this.aliceFee2)
+                    .sub(this.bobFee)
+                    .sub(this.danFee)
+                    .sub(this.frankFee)
+                })
+
+                it("getNumberOfHolders is not changed ", async function () {
+                  getNumberOfHolders = await this.pool.getNumberOfHolders()
+                  expect(4).to.equal(getNumberOfHolders)
+                })
+
+                it("changes the values of holder deposit in getHoldersList()", async function () {
+                  const len = 4
+                  const expectedDeposit = this.aliceFirstDeposit.add(this.aliceSecondDeposit).sub(this.aliceFee1).sub(this.aliceFee2)
+
+                  getHoldersList = await this.pool.getHoldersList(0, len)
+                  block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+
+                  stakers = getHoldersList["stakers"]
+                  stakingTimestamps = getHoldersList["stakingTimestamps"]
+                  lastClaimedTimeStamps = getHoldersList["lastClaimedTimeStamps"]
+                  stakedTokens = getHoldersList["stakedTokens"]
+
+                  expect(stakers.length).to.equal(len)
+                  expect(stakingTimestamps.length).to.equal(len)
+                  expect(lastClaimedTimeStamps.length).to.equal(len)
+                  expect(stakedTokens.length).to.equal(len)
+
+                  expect(stakers[0]).to.equal(this.alice.address)
+                  expect(stakingTimestamps[0]).to.equal(block.timestamp)
+                  expect(lastClaimedTimeStamps[0]).to.equal(block.timestamp)
+                  expect(stakedTokens[0]).to.equal(expectedDeposit)
+                })
+
+                it("increasing balance of depositToken on the contract", async function () {
+                  const contractBalance = await this.depositToken.balanceOf(this.pool.address)
+                  expect(contractBalance).to.equal(expectedBalance)
+                })
+
+                it("increase totalTokens", async function () {
+                  const contractBalance = await this.pool.totalTokens()
+                  expect(contractBalance).to.equal(expectedBalance)
+                })
+
+                it("change Alice position", async function () {
+                  const deposit = await this.pool.depositedTokens(this.alice.address)
+                  const depositTime = await this.pool.depositTime(this.alice.address)
+                  const block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+                  const expectedDeposit = this.aliceFirstDeposit.add(this.aliceSecondDeposit).sub(this.aliceFee1).sub(this.aliceFee2)
+                  expect(block.timestamp).to.equal(depositTime._hex)
+                  expect(deposit).to.equal(expectedDeposit)
+                })
+
+                it("owner receives fee for the deposit", async function () {
+                  const ownerBalance = await this.depositToken.balanceOf(this.owner.address)
+                  const balance = this.aliceFee1.add(this.aliceFee2).add(this.bobFee).add(this.danFee).add(this.frankFee)
+                  expect(ownerBalance).to.equal(balance)
+                })
+
+                it("impossible emergencyWithdraw", async function () {
+                  await expect(this.pool.connect(this.alice).emergencyWithdraw(this.aliceSecondDeposit)).to.be.revertedWith(
+                    "You recently staked, please wait before withdrawing."
+                  )
+                })
+
+                it("impossible withdraw", async function () {
+                  await expect(this.pool.connect(this.alice).withdraw(this.aliceSecondDeposit)).to.be.revertedWith(
+                    "You recently staked, please wait before withdrawing."
+                  )
+                })
+
+                it("resetting getEstimatedPendingDivs alice", async function () {
+                  expect(await this.pool.getEstimatedPendingDivs(this.alice.address)).to.equal(0)
+                  this.aliceEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.alice.address)
+                })
+
+                it("increase getEstimatedPendingDivs of everyone except alice", async function () {
+                  await this.pool.connect(this.signers[10]).claim() // an insignificant operation, moves to the next block in which the parameters are changed
+                  expect(await this.pool.getEstimatedPendingDivs(this.bob.address)).to.be.above(this.bobEstimatedPendingDivs)
+                  expect(await this.pool.getEstimatedPendingDivs(this.dan.address)).to.be.above(this.danEstimatedPendingDivs)
+                  expect(await this.pool.getEstimatedPendingDivs(this.frank.address)).to.be.above(this.frankEstimatedPendingDivs)
+
+                  this.bobEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.bob.address)
+                  this.danEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.dan.address)
+                  this.frankEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.frank.address)
+                })
+
+                it("part of reward is accrued", async function () {
+                  const aliceRewardBalance = await this.rewardToken.balanceOf(this.alice.address)
+                  expect(aliceRewardBalance).to.be.above(0)
+                })
+
+                describe("Stake period has passed", function () {
+                  beforeEach(async function () {
+                    LOCKUP_TIME = await this.pool.LOCKUP_TIME()
+                    await network.provider.send("evm_increaseTime", [parseInt(LOCKUP_TIME) + 1])
+                  })
+
+                  it("increase getEstimatedPendingDivs", async function () {
+                    await this.pool.connect(this.signers[10]).claim() // an insignificant operation, moves to the next block in which the parameters are changed
+
+                    expect(await this.pool.getEstimatedPendingDivs(this.alice.address)).to.be.above(this.aliceEstimatedPendingDivs)
+                    expect(await this.pool.getEstimatedPendingDivs(this.bob.address)).to.be.above(this.bobEstimatedPendingDivs)
+                    expect(await this.pool.getEstimatedPendingDivs(this.dan.address)).to.be.above(this.danEstimatedPendingDivs)
+                    expect(await this.pool.getEstimatedPendingDivs(this.frank.address)).to.be.above(this.frankEstimatedPendingDivs)
+
+                    this.aliceEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.alice.address)
+                    this.bobEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.bob.address)
+                    this.danEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.dan.address)
+                    this.frankEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.frank.address)
+                  })
+
+                  it("impossible withdraw 0 token", async function () {
+                    await expect(this.pool.connect(this.alice).withdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens")
+                    await expect(this.pool.connect(this.bob).withdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens")
+                    await expect(this.pool.connect(this.dan).withdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens")
+                    await expect(this.pool.connect(this.frank).withdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens")
+                  })
+
+                  it("impossible withdraw more than balance", async function () {
+                    await expect(this.pool.connect(this.alice).withdraw(this.aliceSecondDeposit.mul("2"))).to.be.revertedWith(
+                      "Invalid amount to withdraw"
+                    )
+                    await expect(this.pool.connect(this.alice).withdraw(this.aliceSecondDeposit.mul("2"))).to.be.revertedWith(
+                      "Invalid amount to withdraw"
+                    )
+                    await expect(this.pool.connect(this.alice).withdraw(this.aliceSecondDeposit.mul("2"))).to.be.revertedWith(
+                      "Invalid amount to withdraw"
+                    )
+                    await expect(this.pool.connect(this.alice).withdraw(this.aliceSecondDeposit.mul("2"))).to.be.revertedWith(
+                      "Invalid amount to withdraw"
+                    )
+                  })
+
+                  it("impossible emergencyWithdraw 0 token", async function () {
+                    await expect(this.pool.connect(this.alice).emergencyWithdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens")
+                    await expect(this.pool.connect(this.bob).emergencyWithdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens")
+                    await expect(this.pool.connect(this.dan).emergencyWithdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens")
+                    await expect(this.pool.connect(this.frank).emergencyWithdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens")
+                  })
+
+                  it("impossible emergencyWithdraw more than balance", async function () {
+                    await expect(this.pool.connect(this.alice).emergencyWithdraw(this.aliceSecondDeposit.mul("2"))).to.be.revertedWith(
+                      "Invalid amount to withdraw"
+                    )
+                    await expect(this.pool.connect(this.alice).emergencyWithdraw(this.aliceSecondDeposit.mul("2"))).to.be.revertedWith(
+                      "Invalid amount to withdraw"
+                    )
+                    await expect(this.pool.connect(this.alice).emergencyWithdraw(this.aliceSecondDeposit.mul("2"))).to.be.revertedWith(
+                      "Invalid amount to withdraw"
+                    )
+                    await expect(this.pool.connect(this.alice).withdraw(this.aliceSecondDeposit.mul("2"))).to.be.revertedWith(
+                      "Invalid amount to withdraw"
+                    )
+                  })
+
+                  describe("After possible function withdraw", function () {
+                    beforeEach(async function () {
+                      await this.pool.connect(this.alice).withdraw(this.aliceSecondDeposit)
+                      await this.pool.connect(this.bob).withdraw(this.bobDeposit.sub(this.bobFee))
+                      await this.pool.connect(this.dan).withdraw(this.danDeposit.div("2"))
+                      await this.pool.connect(this.frank).withdraw(this.frankDeposit.sub(this.frankFee))
+                      expectedBalance = this.aliceFirstDeposit
+                        .add(this.danDeposit)
+                        .sub(this.aliceFee1)
+                        .sub(this.aliceFee2)
+                        .sub(this.danFee)
+                        .sub(this.danDeposit.div("2"))
+                    })
+
+                    it("possible withdraw when stake period has passed", async function () {
+                      const contractBalance = await this.depositToken.balanceOf(this.pool.address)
+                      const holderBalance = await this.depositToken.balanceOf(this.alice.address)
+                      const aliceDepositedTokens = await this.pool.depositedTokens(this.alice.address)
+
+                      const expectedHolderBalance = this.aliceSecondDeposit.sub(this.aliceFee2)
+                      const expectedAliceDepositedTokens = this.aliceFirstDeposit.sub(this.aliceFee1).sub(this.aliceFee2)
+
+                      expect(contractBalance).to.equal(expectedBalance)
+                      expect(holderBalance).to.equal(expectedHolderBalance)
+                      expect(aliceDepositedTokens).to.equal(expectedAliceDepositedTokens)
+                    })
+
+                    it("owner receives fee for withdraw", async function () {
+                      const ownerBalance = await this.depositToken.balanceOf(this.owner.address)
+                      const fee = this.aliceFee1
+                        .add(this.aliceFee2)
+                        .add(this.bobFee)
+                        .add(this.danFee)
+                        .add(this.frankFee)
+                        .add(this.aliceFee2)
+                        .add(this.danFee.div("2"))
+                        .add(this.bobDeposit.sub(this.bobFee).mul("50").div("10000"))
+                        .add(this.frankDeposit.sub(this.frankFee).mul("50").div("10000"))
+                      expect(ownerBalance).to.equal(fee)
+                    })
+
+                    it("decrease totalTokens", async function () {
+                      const contractBalance = await this.pool.totalTokens()
+                      expect(expectedBalance).to.equal(contractBalance)
+                    })
+
+                    it("reward is accrued", async function () {
+                      const decimals = BigNumber.from("1000000000000000000")
+                      const reward = BigNumber.from("5400").mul(decimals)
+                      const aliceReward = parseInt((await this.rewardToken.balanceOf(this.alice.address)).div(decimals))
+                      const bobReward = parseInt((await this.rewardToken.balanceOf(this.bob.address)).div(decimals)) + 1
+                      const danReward = parseInt((await this.rewardToken.balanceOf(this.dan.address)).div(decimals)) + 1
+                      const frankReward = parseInt((await this.rewardToken.balanceOf(this.frank.address)).div(decimals)) + 1
+                      //one is added due to rounding and counting reward errors.
+
+                      const totalDeposit = this.aliceFirstDeposit
+                        .add(this.aliceSecondDeposit)
+                        .add(this.bobDeposit)
+                        .add(this.frankDeposit)
+                        .add(this.danDeposit)
+                      const expectedAliceReward = parseInt(
+                        this.aliceFirstDeposit.add(this.aliceSecondDeposit).mul(reward).div(totalDeposit).div(decimals)
+                      )
+                      const expectedBobReward = parseInt(this.bobDeposit.mul(reward).div(totalDeposit).div(decimals))
+                      const expectedDanReward = parseInt(this.danDeposit.mul(reward).div(totalDeposit).div(decimals))
+                      const expectedFrankReward = parseInt(this.frankDeposit.mul(reward).div(totalDeposit).div(decimals))
+
+                      expect(aliceReward).to.equal(expectedAliceReward)
+                      expect(bobReward).to.equal(expectedBobReward)
+                      expect(danReward).to.equal(expectedDanReward)
+                      expect(frankReward).to.equal(expectedFrankReward)
+                    })
+                  })
+
+                  describe("After possible function emergencyWithdraw", function () {
+                    beforeEach(async function () {
+                      await this.pool.connect(this.alice).emergencyWithdraw(this.aliceSecondDeposit)
+                      await this.pool.connect(this.bob).emergencyWithdraw(this.bobDeposit.sub(this.bobFee))
+                      await this.pool.connect(this.dan).emergencyWithdraw(this.danDeposit.div("2"))
+                      await this.pool.connect(this.frank).emergencyWithdraw(this.frankDeposit.sub(this.frankFee))
+                      expectedBalance = this.aliceFirstDeposit
+                        .add(this.danDeposit)
+                        .sub(this.aliceFee1)
+                        .sub(this.aliceFee2)
+                        .sub(this.danFee)
+                        .sub(this.danDeposit.div("2"))
+                    })
+
+                    it("possible emergencyWithdraw when stake period has passed", async function () {
+                      const contractBalance = await this.depositToken.balanceOf(this.pool.address)
+                      const holderBalance = await this.depositToken.balanceOf(this.alice.address)
+                      const aliceDepositedTokens = await this.pool.depositedTokens(this.alice.address)
+
+                      const expectedHolderBalance = this.aliceSecondDeposit.sub(this.aliceFee2)
+                      const expectedAliceDepositedTokens = this.aliceFirstDeposit.sub(this.aliceFee1).sub(this.aliceFee2)
+
+                      expect(contractBalance).to.equal(expectedBalance)
+                      expect(holderBalance).to.equal(expectedHolderBalance)
+                      expect(aliceDepositedTokens).to.equal(expectedAliceDepositedTokens)
+                    })
+
+                    it("owner receives fee for withdraw", async function () {
+                      const ownerBalance = await this.depositToken.balanceOf(this.owner.address)
+                      const fee = this.aliceFee1
+                        .add(this.aliceFee2)
+                        .add(this.bobFee)
+                        .add(this.danFee)
+                        .add(this.frankFee)
+                        .add(this.aliceFee2)
+                        .add(this.danFee.div("2"))
+                        .add(this.bobDeposit.sub(this.bobFee).mul("50").div("10000"))
+                        .add(this.frankDeposit.sub(this.frankFee).mul("50").div("10000"))
+                      expect(ownerBalance).to.equal(fee)
+                    })
+
+                    it("decrease totalTokens", async function () {
+                      const contractBalance = await this.pool.totalTokens()
+                      expect(expectedBalance).to.equal(contractBalance)
+                    })
+
+                    it("not issue a reward", async function () {
+                      const aliceReward = await this.rewardToken.balanceOf(this.alice.address)
+                      const bobReward = await this.rewardToken.balanceOf(this.bob.address)
+                      const danReward = await this.rewardToken.balanceOf(this.dan.address)
+                      const frankReward = await this.rewardToken.balanceOf(this.frank.address)
+
+                      expect(aliceReward).to.be.above(0) //part of the reward was paid during Alice's second deposit
+                      expect(bobReward).to.equal(0)
+                      expect(danReward).to.equal(0)
+                      expect(frankReward).to.equal(0)
+                    })
+                  })
+
+                  describe("After possible function claim()", function () {
+                    beforeEach(async function () {
+                      totalEarnedTokensBeforeClaim = await this.pool.totalEarnedTokens(this.frank.address)
+                      await this.pool.connect(this.alice).claim()
+                      block1 = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+                      await this.pool.connect(this.bob).claim()
+                      block2 = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+                      await this.pool.connect(this.dan).claim()
+                      block3 = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+                      await this.pool.connect(this.frank).claim()
+                      block4 = await network.provider.send("eth_getBlockByNumber", ["latest", false])
+                    })
+
+                    it("resetting getEstimatedPendingDivs", async function () {
+                      await this.pool.connect(this.alice).claim()
+                      expect(await this.pool.getEstimatedPendingDivs(this.alice.address)).to.equal(0)
+
+                      await this.pool.connect(this.bob).claim()
+                      expect(await this.pool.getEstimatedPendingDivs(this.bob.address)).to.equal(0)
+
+                      await this.pool.connect(this.dan).claim()
+                      expect(await this.pool.getEstimatedPendingDivs(this.dan.address)).to.equal(0)
+
+                      await this.pool.connect(this.frank).claim()
+                      expect(await this.pool.getEstimatedPendingDivs(this.frank.address)).to.equal(0)
+                    })
+
+                    it("reward is accrued", async function () {
+                      const decimals = BigNumber.from("1000000000000000000")
+                      const reward = BigNumber.from("5400").mul(decimals)
+                      const aliceReward = parseInt((await this.rewardToken.balanceOf(this.alice.address)).div(decimals))
+                      const bobReward = parseInt((await this.rewardToken.balanceOf(this.bob.address)).div(decimals)) + 1
+                      const danReward = parseInt((await this.rewardToken.balanceOf(this.dan.address)).div(decimals)) + 1
+                      const frankReward = parseInt((await this.rewardToken.balanceOf(this.frank.address)).div(decimals)) + 1
+                      //one is added due to rounding and counting reward errors.
+
+                      const totalDeposit = this.aliceFirstDeposit
+                        .add(this.aliceSecondDeposit)
+                        .add(this.bobDeposit)
+                        .add(this.frankDeposit)
+                        .add(this.danDeposit)
+                      const expectedAliceReward = parseInt(
+                        this.aliceFirstDeposit.add(this.aliceSecondDeposit).mul(reward).div(totalDeposit).div(decimals)
+                      )
+                      const expectedBobReward = parseInt(this.bobDeposit.mul(reward).div(totalDeposit).div(decimals))
+                      const expectedDanReward = parseInt(this.danDeposit.mul(reward).div(totalDeposit).div(decimals))
+                      const expectedFrankReward = parseInt(this.frankDeposit.mul(reward).div(totalDeposit).div(decimals))
+
+                      expect(aliceReward).to.equal(expectedAliceReward)
+                      expect(bobReward).to.equal(expectedBobReward)
+                      expect(danReward).to.equal(expectedDanReward)
+                      expect(frankReward).to.equal(expectedFrankReward)
+                    })
+
+                    it("increase totalEarnedTokens when receiving reward funds", async function () {
+                      expect(0).to.equal(totalEarnedTokensBeforeClaim)
+                      const decimals = BigNumber.from("1000000000000000000")
+                      const reward = BigNumber.from("5400").mul(decimals)
+                      const aliceReward = parseInt((await this.pool.totalEarnedTokens(this.alice.address)).div(decimals))
+                      const bobReward = parseInt((await this.pool.totalEarnedTokens(this.bob.address)).div(decimals)) + 1
+                      const danReward = parseInt((await this.pool.totalEarnedTokens(this.dan.address)).div(decimals)) + 1
+                      const frankReward = parseInt((await this.pool.totalEarnedTokens(this.frank.address)).div(decimals)) + 1
+                      //one is added due to rounding and counting reward errors.
+
+                      const totalDeposit = this.aliceFirstDeposit
+                        .add(this.aliceSecondDeposit)
+                        .add(this.bobDeposit)
+                        .add(this.frankDeposit)
+                        .add(this.danDeposit)
+                      const expectedAliceReward = parseInt(
+                        this.aliceFirstDeposit.add(this.aliceSecondDeposit).mul(reward).div(totalDeposit).div(decimals)
+                      )
+                      const expectedBobReward = parseInt(this.bobDeposit.mul(reward).div(totalDeposit).div(decimals))
+                      const expectedDanReward = parseInt(this.danDeposit.mul(reward).div(totalDeposit).div(decimals))
+                      const expectedFrankReward = parseInt(this.frankDeposit.mul(reward).div(totalDeposit).div(decimals))
+
+                      expect(aliceReward).to.equal(expectedAliceReward)
+                      expect(bobReward).to.equal(expectedBobReward)
+                      expect(danReward).to.equal(expectedDanReward)
+                      expect(frankReward).to.equal(expectedFrankReward)
+                    })
+
+                    it("increasing the lastClaimedTime when claim", async function () {
+                      const aliceLastClaimedTime = await this.pool.lastClaimedTime(this.alice.address)
+                      const bobLastClaimedTime = await this.pool.lastClaimedTime(this.bob.address)
+                      const danLastClaimedTime = await this.pool.lastClaimedTime(this.dan.address)
+                      const frankLastClaimedTime = await this.pool.lastClaimedTime(this.frank.address)
+
+                      expect(BigNumber.from(aliceLastClaimedTime)._hex).to.equal(block1.timestamp)
+                      expect(BigNumber.from(bobLastClaimedTime)._hex).to.equal(block2.timestamp)
+                      expect(BigNumber.from(danLastClaimedTime)._hex).to.equal(block3.timestamp)
+                      expect(BigNumber.from(frankLastClaimedTime)._hex).to.equal(block4.timestamp)
+                    })
+                  })
+
+                  describe("Deposit(disburseDuration time) period has passed", function () {
+                    it("impossible deposit", async function () {
+                      await expect(this.pool.connect(this.alice).deposit(this.aliceSecondDeposit)).to.be.revertedWith("Deposits are closed now!")
+                    })
+
+                    it("can't transfer reward tokens(transferAnyERC20Token) until 'adminCanClaimAfter' time has not passed", async function () {
+                      await expect(this.pool.transferAnyERC20Token(this.rewardToken.address, this.owner.address, 1000)).to.revertedWith(
+                        "Admin cannot Transfer out Reward Tokens Yet!"
+                      )
+                    })
+
+                    it("can't transfer reward tokens(transferAnyOldERC20Token) until 'adminCanClaimAfter' time has not passed", async function () {
+                      await expect(this.pool.transferAnyOldERC20Token(this.rewardToken.address, this.owner.address, 1000)).to.revertedWith(
+                        "Admin cannot Transfer out Reward Tokens Yet!"
+                      )
+                    })
+
+                    describe("adminClaimableTime period has passed", function () {
+                      beforeEach(async function () {
+                        adminCanClaimAfter = await this.pool.adminCanClaimAfter()
+                        await network.provider.send("evm_increaseTime", [parseInt(adminCanClaimAfter.toString())])
+                      })
+
+                      it("transferAnyERC20Token ALWAYS only owner", async function () {
+                        await expect(
+                          this.pool.connect(this.alice).transferAnyERC20Token(this.depositToken.address, this.owner.address, 100)
+                        ).to.be.revertedWith("Ownable: caller is not the owner")
+                      })
+
+                      it("transferAnyOldERC20Token ALWAYS only owner", async function () {
+                        await expect(
+                          this.pool.connect(this.alice).transferAnyOldERC20Token(this.depositToken.address, this.owner.address, 100)
+                        ).to.be.revertedWith("Ownable: caller is not the owner")
+                      })
+
+                      it("owner ALWAYS(regardless of the time) can't withdraw deposit token(transferAnyOldERC20Token) from contract", async function () {
+                        await expect(
+                          this.pool.connect(this.owner).transferAnyOldERC20Token(this.depositToken.address, this.owner.address, 100)
+                        ).to.be.revertedWith("Admin cannot transfer out deposit tokens from this vault!")
+                      })
+
+                      it("owner ALWAYS(regardless of the time) can't withdraw deposit token(transferAnyERC20Token) from contract", async function () {
+                        await expect(
+                          this.pool.connect(this.owner).transferAnyERC20Token(this.depositToken.address, this.owner.address, 100)
+                        ).to.be.revertedWith("Admin cannot transfer out deposit tokens from this vault!")
+                      })
+
+                      it("owner can withdraw reward token(transferAnyERC20Token)", async function () {
+                        await this.pool.connect(this.owner).transferAnyERC20Token(this.rewardToken.address, this.bob.address, "100")
+                        const rewardBalance = await this.rewardToken.balanceOf(this.bob.address)
+                        expect(rewardBalance).to.equal("100")
+                      })
+
+                      it("owner can withdraw reward token(transferAnyOldERC20Token)", async function () {
+                        await this.pool.connect(this.owner).transferAnyOldERC20Token(this.rewardToken.address, this.bob.address, "100")
+                        const rewardBalance = await this.rewardToken.balanceOf(this.bob.address)
+                        expect(rewardBalance).to.equal("100")
+                      })
+
+                      describe("User put other erc20 token on the contract", function () {
+                        beforeEach(async function () {
+                          this.otherToken = await this.tokenFactory.deploy("UniFi", "UniFi", this.owner.address)
+                          await this.otherToken.transfer(this.pool.address, "100")
+                        })
+
+                        it("owner ALWAYS(regardless of the time) can withdraw any ERC20 token(transferAnyERC20Token)", async function () {
+                          await this.pool.connect(this.owner).transferAnyERC20Token(this.otherToken.address, this.bob.address, "100")
+                          const rewardBalance = await this.otherToken.balanceOf(this.bob.address)
+                          expect(rewardBalance).to.equal("100")
+                        })
+
+                        it("owner ALWAYS(regardless of the time) can withdraw any old ERC20 token(transferAnyOldERC20Token)", async function () {
+                          await this.pool.connect(this.owner).transferAnyOldERC20Token(this.otherToken.address, this.bob.address, "100")
+                          const rewardBalance = await this.otherToken.balanceOf(this.bob.address)
+                          expect(rewardBalance).to.equal("100")
+                        })
+
+                        it("owner can't withdraw more than a balance(transferAnyERC20Token)", async function () {
+                          await expect(
+                            this.pool.connect(this.owner).transferAnyERC20Token(this.otherToken.address, this.bob.address, "1000")
+                          ).to.be.revertedWith("ERC20: transfer amount exceeds balance")
+                        })
+
+                        it("owner can't withdraw more than a balance(transferAnyOldERC20Token)", async function () {
+                          await expect(
+                            this.pool.connect(this.owner).transferAnyOldERC20Token(this.otherToken.address, this.bob.address, "1000")
+                          ).to.be.revertedWith("ERC20: transfer amount exceeds balance")
+                        })
+                      })
+                    })
+                  })
+                })
+              })
+            })
+          })
+        })
       })
-
-      it("decrease in the total number of deposit tokens during the withdraw", async function () {
-        await this.pool.connect(this.alice).withdraw(this.half_alice_deposit)
-        contract_balance = await this.pool.totalTokens()
-        expected_balance = this.alice_deposit.sub(this.half_alice_deposit).sub(this.alice_deposit.mul("50").div("10000"))
-        expect(expected_balance).to.equal(contract_balance)
-      })
-
-      it("getting a reward when withdrawing funds", async function () {
-        balance = 1000
-        await this.rewardToken.approve(this.pool.address, balance)
-        await this.pool.addContractBalance(balance)
-
-        await this.pool.connect(this.alice).withdraw(this.half_alice_deposit)
-        alice_reward_balance = await this.rewardToken.balanceOf(this.alice.address)
-
-        expect(balance - 1).to.equal(alice_reward_balance) // 1 is lost during calculations reward
-      })
-    })
-  })
-
-  describe("function emergencyWithdraw()", function () {
-    // write checks that the tokens were actually debited from the contract to the owner's address
-    it("Cannot withdraw 0 Tokens!", async function () {
-      await expect(this.pool.emergencyWithdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens!")
-    })
-
-    it("you can't emergencyWithdraw until the stake period has passed", async function () {
-      await expect(this.pool.connect(this.alice).emergencyWithdraw(5000)).to.be.revertedWith(
-        "You recently staked, please wait before withdrawing."
-      )
-    })
-
-    describe("Stake period has passed", function () {
-      beforeEach(async function () {
-        LOCKUP_TIME = await this.pool.LOCKUP_TIME()
-        await network.provider.send("evm_increaseTime", [parseInt(LOCKUP_TIME) + 1])
-      })
-
-      it("you can't emergencyWithdraw more than you have on the balance sheet", async function () {
-        await expect(this.pool.connect(this.alice).emergencyWithdraw(this.alice_deposit)).to.be.revertedWith("Invalid amount to withdraw")
-      })
-
-      it("emergencyWithdraw when stake period has passed", async function () {
-        await this.pool.connect(this.alice).emergencyWithdraw(this.half_alice_deposit)
-        contract_balance = await this.depositToken.balanceOf(this.pool.address)
-        holder_balance = await this.depositToken.balanceOf(this.alice.address)
-        pool_balance = await this.pool.depositedTokens(this.alice.address)
-
-        expected_balance = this.alice_deposit.sub(this.half_alice_deposit).sub(this.alice_deposit.mul("50").div("10000"))
-        expected_holder_balance = this.half_alice_deposit.sub(this.half_alice_deposit.mul("50").div("10000"))
-
-        expect(contract_balance).to.equal(expected_balance)
-        expect(holder_balance).to.equal(expected_holder_balance)
-        expect(pool_balance).to.equal(expected_balance)
-      })
-
-      it("owner receives fee for the emergencyWithdraw", async function () {
-        await this.pool.connect(this.alice).emergencyWithdraw(this.half_alice_deposit)
-        ownerBalance = await this.depositToken.balanceOf(this.owner.address)
-
-        deposit_fee = this.alice_deposit.mul("50").div("10000")
-        withdraw_fee = this.half_alice_deposit.mul("50").div("10000")
-        fee = deposit_fee.add(withdraw_fee)
-
-        expect(ownerBalance).to.equal(fee)
-      })
-
-      it("decrease in the total number of deposit tokens during the emergencyWithdraw", async function () {
-        await this.pool.connect(this.alice).emergencyWithdraw(this.half_alice_deposit)
-        contract_balance = await this.pool.totalTokens()
-        expected_balance = this.alice_deposit.sub(this.half_alice_deposit).sub(this.alice_deposit.mul("50").div("10000"))
-        expect(expected_balance).to.equal(contract_balance)
-      })
-
-      it("increasing the lastClaimedTime when emergencyWithdraw", async function () {
-        await this.pool.connect(this.alice).emergencyWithdraw(this.half_alice_deposit)
-        lastClaimedTime = await this.pool.lastClaimedTime(this.alice.address)
-        block = await network.provider.send("eth_getBlockByNumber", ["latest", false])
-        expect(lastClaimedTime).to.equal(block.timestamp)
-      })
-
-      it("emergency withdrawing does not issue a reward", async function () {
-        await this.rewardToken.approve(this.pool.address, 1000000)
-        await this.pool.addContractBalance(1000000)
-
-        balance1 = await this.rewardToken.balanceOf(this.alice.address)
-        await this.pool.connect(this.alice).emergencyWithdraw(this.half_alice_deposit)
-        balance2 = await this.rewardToken.balanceOf(this.alice.address)
-        expect(balance1).to.equal(balance2)
-      })
-    })
-  })
-
-  describe("function transferAnyERC20Token()", function () {
-    it("function only owner", async function () {
-      await expect(this.pool.connect(this.alice).transferAnyERC20Token(this.rewardToken.address, this.alice.address, 1000)).to.be.revertedWith(
-        "Ownable: caller is not the owner"
-      )
-    })
-
-    it("can't transfer out deposit tokens", async function () {
-      await expect(this.pool.transferAnyERC20Token(this.depositToken.address, this.owner.address, 1000)).to.revertedWith(
-        "Admin cannot transfer out deposit tokens from this vault!"
-      )
-    })
-
-    it("can't transfer reward tokens until 'adminCanClaimAfter' time has passed", async function () {
-      await expect(this.pool.transferAnyERC20Token(this.rewardToken.address, this.owner.address, 1000)).to.revertedWith(
-        "Admin cannot Transfer out Reward Tokens Yet!"
-      )
-    })
-
-    it("can transfer bonus tokens 'adminCanClaimAfter' time has passed", async function () {
-      await this.rewardToken.approve(this.pool.address, 1000000)
-      await this.pool.addContractBalance(1000000)
-
-      adminCanClaimAfter = await this.pool.adminCanClaimAfter()
-      await network.provider.send("evm_increaseTime", [parseInt(adminCanClaimAfter) + 1])
-
-      await this.pool.transferAnyERC20Token(this.rewardToken.address, this.alice.address, 1000)
-      alice_balance = await this.rewardToken.balanceOf(this.alice.address)
-      expect(alice_balance).to.equal(1000)
-    })
-
-    it("can transfer other ERC20 tokens", async function () {
-      ERC20 = await this.token.deploy("DAO1", "DAO1", this.owner.address)
-      await ERC20.transfer(this.pool.address, 1000)
-      await this.pool.transferAnyERC20Token(ERC20.address, this.alice.address, 1000)
-
-      alice_balance = await ERC20.balanceOf(this.alice.address)
-      expect(alice_balance).to.equal(1000)
-    })
-
-    it("can't transfer any ERC20 tokens more than the balance", async function () {
-      adminCanClaimAfter = await this.pool.adminCanClaimAfter()
-      await network.provider.send("evm_increaseTime", [parseInt(adminCanClaimAfter) + 1])
-      await expect(this.pool.transferAnyERC20Token(this.rewardToken.address, this.owner.address, 1000)).to.revertedWith(
-        "ERC20: transfer amount exceeds balance"
-      )
-    })
-  })
-
-  describe("function transferAnyOldERC20Token()", function () {
-    it("function only owner", async function () {
-      await expect(
-        this.pool.connect(this.alice).transferAnyOldERC20Token(this.rewardToken.address, this.alice.address, 1000)
-      ).to.be.revertedWith("Ownable: caller is not the owner")
-    })
-
-    it("can't transfer out deposit tokens", async function () {
-      await expect(this.pool.transferAnyOldERC20Token(this.depositToken.address, this.owner.address, 1000)).to.revertedWith(
-        "Admin cannot transfer out deposit tokens from this vault!"
-      )
-    })
-
-    it("can't transfer reward tokens until 'adminCanClaimAfter' time has passed", async function () {
-      await expect(this.pool.transferAnyOldERC20Token(this.rewardToken.address, this.owner.address, 1000)).to.revertedWith(
-        "Admin cannot Transfer out Reward Tokens Yet!"
-      )
-    })
-
-    it("can transfer bonus tokens 'adminCanClaimAfter' time has passed", async function () {
-      await this.rewardToken.approve(this.pool.address, 1000000)
-      await this.pool.addContractBalance(1000000)
-      adminCanClaimAfter = await this.pool.adminCanClaimAfter()
-      await network.provider.send("evm_increaseTime", [parseInt(adminCanClaimAfter) + 1])
-      await this.pool.transferAnyOldERC20Token(this.rewardToken.address, this.alice.address, 1000)
-      alice_balance = await this.rewardToken.balanceOf(this.alice.address)
-      expect(alice_balance).to.equal(1000)
-    })
-
-    it("can transfer other ERC20 tokens", async function () {
-      ERC20 = await this.token.deploy("DAO1", "DAO1", this.owner.address)
-      await ERC20.transfer(this.pool.address, 1000)
-      await this.pool.transferAnyOldERC20Token(ERC20.address, this.alice.address, 1000)
-      alice_balance = await ERC20.balanceOf(this.alice.address)
-      expect(alice_balance).to.equal(1000)
-    })
-
-    it("can't transfer any ERC20 tokens more than the balance", async function () {
-      adminCanClaimAfter = await this.pool.adminCanClaimAfter()
-      await network.provider.send("evm_increaseTime", [parseInt(adminCanClaimAfter) + 1])
-      await expect(this.pool.transferAnyOldERC20Token(this.rewardToken.address, this.owner.address, 1000)).to.revertedWith(
-        "ERC20: transfer amount exceeds balance"
-      )
-    })
-  })
-
-  describe("function addContractBalance()", async function () {
-    beforeEach(async function () {
-      await this.rewardToken.approve(this.pool.address, 1000)
-      await this.pool.addContractBalance(1000)
-      balance = await this.rewardToken.balanceOf(this.pool.address)
-    })
-
-    it("function only owner", async function () {
-      await expect(this.pool.connect(this.alice).addContractBalance(1000)).to.be.revertedWith("Ownable: caller is not the owner")
-    })
-
-    it("increase contractBalance", async function () {
-      contractBalance = await this.pool.contractBalance()
-      expect(balance).to.equal(1000)
-      expect(contractBalance).to.equal(1000)
-    })
-
-    it("increase getEstimatedPendingDivs", async function () {
-      getEstimatedPendingDivs = await this.pool.getEstimatedPendingDivs(this.alice.address)
-      expect(getEstimatedPendingDivs).to.equal(balance)
     })
   })
 })
