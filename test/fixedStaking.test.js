@@ -270,7 +270,7 @@ describe("FixedStaking", function () {
                   it("reverts if amount > unallocatedTokens", async function () {
                     await expect(
                       this.pool.withdrawUnallocatedTokens(this.alice.address, fee1.add(reward.sub(reward.div("2"))).add("1"))
-                    ).to.be.revertedWith("Amount is more than there are unallocatedTokens!")
+                    ).to.be.revertedWith("Not enough unallocatedTokens")
                   })
 
                   it("withdrawUnallocatedTokens", async function () {
@@ -396,7 +396,7 @@ describe("FixedStaking", function () {
                             .add(secondReward.sub(secondReward.div("2")))
                             .add("1")
                         )
-                      ).to.be.revertedWith("Amount is more than there are unallocatedTokens!")
+                      ).to.be.revertedWith("Not enough unallocatedTokens")
                     })
 
                     it("withdrawUnallocatedTokens", async function () {
@@ -536,7 +536,7 @@ describe("FixedStaking", function () {
 
                     it("reverts if amount > unallocatedTokens", async function () {
                       await expect(this.pool.withdrawUnallocatedTokens(this.alice.address, fee1.add("1"))).to.be.revertedWith(
-                        "Amount is more than there are unallocatedTokens!"
+                        "Not enough unallocatedTokens"
                       )
                     })
 
@@ -640,7 +640,7 @@ describe("FixedStaking", function () {
 
                       it("reverts if amount > unallocatedTokens", async function () {
                         await expect(this.pool.withdrawUnallocatedTokens(this.alice.address, fee1.add(fee2).add("1"))).to.be.revertedWith(
-                          "Amount is more than there are unallocatedTokens!"
+                          "Not enough unallocatedTokens"
                         )
                       })
 

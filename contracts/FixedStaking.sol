@@ -67,7 +67,7 @@ contract FixedStaking is Ownable {
     }
 
     function withdrawUnallocatedTokens(address _to, uint256 _amount) public onlyOwner {
-        require(unallocatedTokens() >= _amount, "Amount is more than there are unallocatedTokens!");
+        require(unallocatedTokens() >= _amount, "Not enough unallocatedTokens");
         token.safeTransfer(_to, _amount);
     }
 
