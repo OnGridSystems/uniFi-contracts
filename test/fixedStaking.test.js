@@ -66,6 +66,18 @@ describe("FixedStaking", function () {
                   .withArgs(this.alice.address, this.pool.address, 10000)
         })
 
+        it("emits event Stake", async function () {
+
+          const stakesLength = 1
+          const depositAmount = 10000
+          const startTime = 0
+          const endTime = 30*24*60*60
+
+          await expect(stake1)
+            .to.emit(this.pool, "Stake")
+            .withArgs(this.alice.address, stakesLength, depositAmount, startTime, endTime)
+        })
+
         it("Stop() called by owner closes stakes", async function () {
           await this.pool.stop()
           expect(await this.pool.stakesOpen()).to.equal(false)
@@ -109,6 +121,18 @@ describe("FixedStaking", function () {
           it("emits event Transfer on staking", async function () {
             await expect(stake2).to.emit(this.token, "Transfer")
                     .withArgs(this.alice.address, this.pool.address, 20000)
+          })
+
+          it("emits event Stake", async function () {
+
+            const stakesLength = 2
+            const depositAmount = 20000
+            const startTime = 0
+            const endTime = 30*24*60*60
+
+            await expect(stake2)
+              .to.emit(this.pool, "Stake")
+              .withArgs(this.alice.address, stakesLength, depositAmount, startTime, endTime)
           })
 
           it("check stakes length and token balance", async function () {
@@ -171,6 +195,19 @@ describe("FixedStaking", function () {
                         .withArgs(this.pool.address, this.alice.address, BigNumber.from(10000).sub(fee1))
               })
 
+              it("emits event Unstake", async function () {
+
+                const stakeId = 0
+                const depositAmount = 10000
+                const startTime = 0
+                const endTime = 30*24*60*60
+                const earlyStake = true
+
+                await expect(unstake1)
+                  .to.emit(this.pool, "Unstake")
+                  .withArgs(this.alice.address, stakeId, depositAmount, startTime, endTime, earlyStake)
+              })
+
               it("fee stays on pool balance", async function () {
                 expect(await this.pool.totalStaked()).to.equal("20000")
                 expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
@@ -227,6 +264,17 @@ describe("FixedStaking", function () {
                           .withArgs(this.pool.address, this.alice.address, reward.div(2))
                 })
 
+                it("emits event Harvest", async function () {
+
+                  const stakeId = 0
+                  const harvestableYield = 77
+                  const currentTime = 15*24*60*60
+
+                  await expect(harvest1)
+                    .to.emit(this.pool, "Harvest")
+                    .withArgs(this.alice.address, stakeId, harvestableYield, currentTime)
+                })
+
                 it("Alice's stake became inactive and fee got withheld", async function () {
                   expect(await this.token.balanceOf(this.alice.address))
                     .to.equal(aliceInitBalance.sub(20000).sub(fee1).add(reward.div(2)));
@@ -252,6 +300,19 @@ describe("FixedStaking", function () {
                   fee2 = BigNumber.from(20000).mul("155").div(10000)
                   await expect(unstake2).to.emit(this.token, "Transfer")
                           .withArgs(this.pool.address, this.alice.address, BigNumber.from(20000).sub(fee2))
+                })
+
+                it("emits event Unstake", async function () {
+
+                  const stakeId = 1
+                  const depositAmount = 20000
+                  const startTime = 0
+                  const endTime = 30*24*60*60
+                  const earlyStake = true
+
+                  await expect(unstake2)
+                    .to.emit(this.pool, "Unstake")
+                    .withArgs(this.alice.address, stakeId, depositAmount, startTime, endTime, earlyStake)
                 })
 
                 it("contract states", async function () {
@@ -310,6 +371,17 @@ describe("FixedStaking", function () {
                             .withArgs(this.pool.address, this.alice.address, secondReward.div(2))
                   })
 
+                  it("emits event Harvest with harvesting rewards", async function () {
+
+                    const stakeId = 1
+                    const harvestableYield = 155
+                    const currentTime = 15*24*60*60
+
+                    await expect(harvest2)
+                      .to.emit(this.pool, "Harvest")
+                      .withArgs(this.alice.address, stakeId, harvestableYield, currentTime)
+                  })
+
                   it("her stake is correct", async function () {
                     expect(await this.token.balanceOf(this.alice.address))
                       .to.equal(aliceInitBalance.sub(fee1).sub(fee2).add(secondReward.div("2")))
@@ -364,6 +436,19 @@ describe("FixedStaking", function () {
                           .withArgs(this.pool.address, this.alice.address, BigNumber.from(10000).sub(fee1))
                 })
 
+                it("emits event Unstake on unstaking", async function () {
+
+                  const stakeId = 0
+                  const depositAmount = 10000
+                  const startTime = 0
+                  const endTime = 30*24*60*60
+                  const earlyStake = true
+
+                  await expect(unstake1)
+                    .to.emit(this.pool, "Unstake")
+                    .withArgs(this.alice.address, stakeId, depositAmount, startTime, endTime, earlyStake)
+                })
+
                 it("contract states", async function () {
                   expect(await this.pool.totalStaked()).to.equal("20000")
                   expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
@@ -409,7 +494,18 @@ describe("FixedStaking", function () {
 
                 describe("Alice harvests her first stake", function () {
                   beforeEach(async function () {
-                    await this.pool.harvest(0)
+                    harvest1 = await this.pool.harvest(0)
+                  })
+
+                  it("emits event Harvest with harvesting rewards", async function () {
+
+                    const stakeId = 0
+                    const harvestableYield = 155
+                    const currentTime = 30*24*60*60
+
+                    await expect(harvest1)
+                      .to.emit(this.pool, "Harvest")
+                      .withArgs(this.alice.address, stakeId, harvestableYield, currentTime)
                   })
 
                   it("check resulting balance", async function () {
@@ -433,6 +529,19 @@ describe("FixedStaking", function () {
                   it("emits event Transfer on unstaking", async function () {
                     await expect(unstake2).to.emit(this.token, "Transfer")
                             .withArgs(this.pool.address, this.alice.address, BigNumber.from(20000).sub(fee2))
+                  })
+
+                  it("emits event Unstake on unstaking", async function () {
+
+                    const stakeId = 1
+                    const depositAmount = 20000
+                    const startTime = 0
+                    const endTime = 30*24*60*60
+                    const earlyStake = true
+
+                    await expect(unstake2)
+                      .to.emit(this.pool, "Unstake")
+                      .withArgs(this.alice.address, stakeId, depositAmount, startTime, endTime, earlyStake)
                   })
 
                   it("contract states", async function () {
@@ -482,7 +591,18 @@ describe("FixedStaking", function () {
                   describe("Alice harvests second stake", function () {
                     beforeEach(async function () {
                       expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.sub(fee1).sub(fee2))
-                      await this.pool.harvest(1)
+                      harvest2 = await this.pool.harvest(1)
+                    })
+
+                    it("emits event Harvest with harvesting rewards", async function () {
+
+                      const stakeId = 1
+                      const harvestableYield = 310
+                      const currentTime = 30*24*60*60
+
+                      await expect(harvest2)
+                        .to.emit(this.pool, "Harvest")
+                        .withArgs(this.alice.address, stakeId, harvestableYield, currentTime)
                     })
 
                     it("check token balance and stake status", async function () {
@@ -537,6 +657,19 @@ describe("FixedStaking", function () {
                             .withArgs(this.pool.address, this.alice.address, BigNumber.from(10000))
                   })
 
+                  it("emits event Unstake on unstaking", async function () {
+
+                    const stakeId = 0
+                    const depositAmount = 10000
+                    const startTime = 0
+                    const endTime = 30*24*60*60
+                    const earlyStake = false
+
+                    await expect(unstake1)
+                      .to.emit(this.pool, "Unstake")
+                      .withArgs(this.alice.address, stakeId, depositAmount, startTime, endTime, earlyStake)
+                  })
+
                   it("contract states", async function () {
                     expect(await this.pool.totalStaked()).to.equal("20000")
                     expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
@@ -563,7 +696,18 @@ describe("FixedStaking", function () {
 
                   describe("harvesting on first stake", function () {
                     beforeEach(async function () {
-                      await this.pool.harvest(0)
+                      harvest1 = await this.pool.harvest(0)
+                    })
+
+                    it("emits event Harvest with harvesting rewards", async function () {
+
+                      const stakeId = 0
+                      const harvestableYield = 155
+                      const currentTime = 31*24*60*60
+
+                      await expect(harvest1)
+                        .to.emit(this.pool, "Harvest")
+                        .withArgs(this.alice.address, stakeId, harvestableYield, currentTime)
                     })
 
                     it("her stake is correct", async function () {
@@ -586,6 +730,19 @@ describe("FixedStaking", function () {
                     it("emits event Transfer on unstaking", async function () {
                       await expect(unstake2).to.emit(this.token, "Transfer")
                               .withArgs(this.pool.address, this.alice.address, BigNumber.from(20000))
+                    })
+
+                    it("emits event Unstake on unstaking", async function () {
+
+                      const stakeId = 1
+                      const depositAmount = 20000
+                      const startTime = 0
+                      const endTime = 30*24*60*60
+                      const earlyStake = false
+
+                      await expect(unstake2)
+                        .to.emit(this.pool, "Unstake")
+                        .withArgs(this.alice.address, stakeId, depositAmount, startTime, endTime, earlyStake)
                     })
 
                     it("contract states", async function () {
@@ -625,7 +782,29 @@ describe("FixedStaking", function () {
                                 .withArgs(this.pool.address, this.alice.address, reward)
                         await expect(harvest2).to.emit(this.token, "Transfer")
                                 .withArgs(this.pool.address, this.alice.address, secondReward)
-                        })
+                      })
+
+                      it("emits event Harvest with harvesting rewards", async function () {
+
+                        const stakeId = 0
+                        const harvestableYield = 155
+                        const currentTime = 31*24*60*60
+
+                        await expect(harvest1)
+                          .to.emit(this.pool, "Harvest")
+                          .withArgs(this.alice.address, stakeId, harvestableYield, currentTime)
+                      })
+
+                      it("emits event Harvest", async function () {
+
+                        const stakeId = 1
+                        const harvestableYield = 310
+                        const currentTime = 31*24*60*60
+
+                        await expect(harvest2)
+                          .to.emit(this.pool, "Harvest")
+                          .withArgs(this.alice.address, stakeId, harvestableYield, currentTime)
+                      })
 
                       it("her stake is correct after both harvest", async function () {
                         expect(await this.token.balanceOf(this.alice.address)).to.equal(aliceInitBalance.add(totalReward))
@@ -658,7 +837,19 @@ describe("FixedStaking", function () {
 
               await this.token.transfer(this.bob.address, BigNumber.from(345))
               await this.token.connect(this.bob).approve(this.pool.address, 345)
-              await this.pool.connect(this.bob).stake(345)
+              stake1 = await this.pool.connect(this.bob).stake(345)
+            })
+
+            it("emits event Stake", async function () {
+
+              const stakesLength = 1
+              const depositAmount = 345
+              const startTime = 0
+              const endTime = 30*24*60*60
+
+              await expect(stake1)
+                .to.emit(this.pool, "Stake")
+                .withArgs(this.bob.address, stakesLength, depositAmount, startTime, endTime)
             })
 
             it("check Bob's stake details", async function () {
@@ -684,6 +875,20 @@ describe("FixedStaking", function () {
                 expect(await this.token.balanceOf(this.bob.address)).to.equal(BigNumber.from(345).sub(feeBob))
                 expect(await this.pool.collectedFees()).to.equal(feeBob)
               })
+
+              it("emits event Unstake", async function () {
+
+                const stakeId = 0
+                const depositAmount = 345
+                const startTime = 0
+                const endTime = 30*24*60*60
+                const earlyStake = true
+
+                await expect(bobUnstake1)
+                  .to.emit(this.pool, "Unstake")
+                  .withArgs(this.bob.address, stakeId, depositAmount, startTime, endTime, earlyStake)
+              })
+
             })
 
             describe("after 30 day passed Bob unstakes with fee charged", function() {
@@ -699,6 +904,20 @@ describe("FixedStaking", function () {
                 expect(await this.token.balanceOf(this.bob.address)).to.equal(BigNumber.from(345).sub(feeBob))
                 expect(await this.pool.collectedFees()).to.equal(feeBob)
               })
+
+              it("emits event Unstake", async function () {
+
+                const stakeId = 0
+                const depositAmount = 345
+                const startTime = 0
+                const endTime = 30*24*60*60
+                const earlyStake = true
+
+                await expect(bobUnstake30)
+                  .to.emit(this.pool, "Unstake")
+                  .withArgs(this.bob.address, stakeId, depositAmount, startTime, endTime, earlyStake)
+              })
+
             })
 
             describe("after 30 day passed Bob unstakes without fee charged", function() {
@@ -713,6 +932,19 @@ describe("FixedStaking", function () {
                 
                 expect(await this.token.balanceOf(this.bob.address)).to.equal(BigNumber.from(345))
                 expect(await this.pool.collectedFees()).to.equal(0)
+              })
+
+              it("emits event Unstake", async function () {
+
+                const stakeId = 0
+                const depositAmount = 345
+                const startTime = 0
+                const endTime = 30*24*60*60
+                const earlyStake = false
+
+                await expect(bobUnstake31)
+                  .to.emit(this.pool, "Unstake")
+                  .withArgs(this.bob.address, stakeId, depositAmount, startTime, endTime, earlyStake)
               })
             }) 
 
