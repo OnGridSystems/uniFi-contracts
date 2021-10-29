@@ -1,5 +1,5 @@
 module.exports = async function ({ getNamedAccounts, deployments }) {
-  const { deploy } = deployments
+  const { deploy, execute } = deployments
   const { deployer } = await getNamedAccounts()
 
   const UniFi = await ethers.getContract("UniFi")
@@ -14,6 +14,14 @@ module.exports = async function ({ getNamedAccounts, deployments }) {
     args: [token, stakeDurationDays, rewardRate, earlyUnstakeFee],
     contract: "FixedStaking",
   })
+
+  await execute("FixedStaking3Days",
+    {
+      from: deployer,
+      log: true
+    },
+    "start"
+  )
 }
 
 module.exports.tags = ["FixedStaking3Days"]
