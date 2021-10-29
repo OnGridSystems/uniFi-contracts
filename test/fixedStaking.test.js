@@ -39,18 +39,18 @@ describe("FixedStaking", function () {
     })
 
     it("should revert when Stakes are not started yet", async function () {
-     await expect(this.pool.stop()).to.be.revertedWith("Stakes are stopped already")
+      await expect(this.pool.stop()).to.be.revertedWith("Stakes are stopped already")
     })
 
     describe("Start staking", async function () {
       beforeEach(async function () {
         await this.pool.start()
       })
-      
+
       it("should revert when start () is called again", async function () {
         await expect(this.pool.start()).to.be.revertedWith("Stakes are open already")
       })
-      
+
       it("should revert if not enough reward tokens", async function () {
         await this.token.transfer(this.pool.address, 155)
         await expect(this.pool.stake(10000)).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
@@ -279,9 +279,9 @@ describe("FixedStaking", function () {
 
                 describe("owner try to withdraw unalocated tokens", function () {
                   it("reverts if withdrdaw earlier than withdraw_lock passed", async function () {
-                    await expect(
-                      this.pool.withdrawUnallocatedTokens(this.alice.address, "10")
-                    ).to.be.revertedWith("Can't withdraw until withdrawalUnlockTime")
+                    await expect(this.pool.withdrawUnallocatedTokens(this.alice.address, "10")).to.be.revertedWith(
+                      "Can't withdraw until withdrawalUnlockTime"
+                    )
                   })
                 })
 
@@ -309,7 +309,9 @@ describe("FixedStaking", function () {
                   })
 
                   it("should revert if the withdrawal amount Unallocated tokens is zero", async function () {
-                    await expect(this.pool.connect(this.alice).withdrawUnallocatedTokens(this.token.address, 0)).to.be.revertedWith("Zero amount")
+                    await expect(this.pool.connect(this.alice).withdrawUnallocatedTokens(this.token.address, 0)).to.be.revertedWith(
+                      "Zero amount"
+                    )
                   })
                 })
 
@@ -414,9 +416,9 @@ describe("FixedStaking", function () {
 
                   describe("owner try to withdraw unalocated tokens", function () {
                     it("reverts if withdrdaw earlier than withdraw_lock passed", async function () {
-                      await expect(
-                        this.pool.withdrawUnallocatedTokens(this.alice.address, "10")
-                      ).to.be.revertedWith("Can't withdraw until withdrawalUnlockTime")
+                      await expect(this.pool.withdrawUnallocatedTokens(this.alice.address, "10")).to.be.revertedWith(
+                        "Can't withdraw until withdrawalUnlockTime"
+                      )
                     })
                   })
 
@@ -574,9 +576,9 @@ describe("FixedStaking", function () {
 
                   describe("owner try to withdraw unalocated tokens", function () {
                     it("reverts if withdrdaw earlier than withdraw_lock passed", async function () {
-                      await expect(
-                        this.pool.withdrawUnallocatedTokens(this.alice.address, "10")
-                      ).to.be.revertedWith("Can't withdraw until withdrawalUnlockTime")
+                      await expect(this.pool.withdrawUnallocatedTokens(this.alice.address, "10")).to.be.revertedWith(
+                        "Can't withdraw until withdrawalUnlockTime"
+                      )
                     })
                   })
 
@@ -689,9 +691,9 @@ describe("FixedStaking", function () {
 
                     describe("owner try to withdraw unalocated tokens", function () {
                       it("reverts if withdrdaw earlier than withdraw_lock passed", async function () {
-                        await expect(
-                          this.pool.withdrawUnallocatedTokens(this.alice.address, "10")
-                        ).to.be.revertedWith("Can't withdraw until withdrawalUnlockTime")
+                        await expect(this.pool.withdrawUnallocatedTokens(this.alice.address, "10")).to.be.revertedWith(
+                          "Can't withdraw until withdrawalUnlockTime"
+                        )
                       })
                     })
 

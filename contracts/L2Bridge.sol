@@ -4,7 +4,16 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
-import "./DAO1BridgedToken.sol";
+
+
+/**
+ * @dev Extension of {ERC20} that allows to mint and destroy token
+ */
+interface IERC20Bridged is IERC20 {
+    function mint(address to, uint256 amount) external returns (bool);
+    function burn(address to, uint256 amount) external returns (bool);
+}
+
 
 /**
  * @title Bridge Layer 2 contract
@@ -17,7 +26,7 @@ contract L2Bridge is AccessControl {
     using SafeMath for uint256;
 
     // L2 mintable + burnable token that acts as a twin of L2 asset
-    address public token;
+    IERC20Bridged public token;
 
     mapping(address => uint256) public balances;
 
@@ -26,8 +35,8 @@ contract L2Bridge is AccessControl {
     event Burn(address owner, uint256 amount);
     event Mint(address account, uint256 amount);
 
-    constructor(address _token) {
-        require(_token != address(0), "Token cannot be the zero address");
+    constructor(IERC20Bridged _token) {
+        require(address(_token) != address(0), "Token cannot be the zero address");
         token = _token;
         _setupRole(ORACLE_ROLE, msg.sender);
     }
@@ -48,7 +57,7 @@ contract L2Bridge is AccessControl {
 
         balances[_to] = balances[_to].add(_amount);
 
-        require(DAO1BridgedToken(token).mint(_to, _amount), "Mint failed");
+        require(token.mint(_to, _amount), "Mint failed");
         emit Mint(_to, _amount);
     }
 
@@ -64,7 +73,7 @@ contract L2Bridge is AccessControl {
 
         balances[msg.sender] = balances[msg.sender].sub(_amount);
 
-        require(DAO1BridgedToken(token).burn(msg.sender, _amount), "Burn failed");
+        require(token.burn(msg.sender, _amount), "Burn failed");
         emit Burn(msg.sender, _amount);
     }
 }
