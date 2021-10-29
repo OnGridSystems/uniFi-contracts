@@ -87,6 +87,11 @@ describe("DAO1 token", function() {
                 .withArgs(this.owner.address, this.account1.address, amount)
       });
 
+      it("check owner allowance to account1", async function () {
+        expect(await this.token.allowance(this.owner.address, this.account1.address))
+          .to.equal(amount)
+      });
+
       it("reverts if account1 has ZERO_ADDRESS", async function () {
          await expect(this.token.connect(this.owner)
                 .approve(ZERO_ADDRESS, amount))
@@ -166,7 +171,7 @@ describe("DAO1 token", function() {
                               .transferOwnership(ZERO_ADDRESS)
         await expect(transferOwnership)
                   .to.be.revertedWith("Ownable: new owner is the zero address")
-      })
+      });
     });
 
     describe("Checking renounceOwnership method", function () {
@@ -184,8 +189,50 @@ describe("DAO1 token", function() {
       it("contract without an owner", async function () {
         expect(await this.token.owner()).to.equal(ZERO_ADDRESS)
       });
+    });
 
+    describe("increaseAllowance", function () {
 
+      beforeEach(async function () {
+        increaseAllowanceResult = await this.token.connect(this.owner)
+                              .increaseAllowance(this.account1.address, amount)
+      });
+
+      it("emits event Approval", async function () {
+        await expect(increaseAllowanceResult).to.emit(this.token, "Approval")
+                .withArgs(this.owner.address, this.account1.address, amount)
+      });
+
+      it("check owner allowance to account1", async function () {
+        expect(await this.token.allowance(this.owner.address, this.account1.address))
+          .to.equal(amount)
+      });
+
+      describe("decreaseAllowance", function () {
+
+        beforeEach(async function () {
+          decreaseAllowanceResult = await this.token.connect(this.owner)
+                                .decreaseAllowance(this.account1.address, amount.div(2))
+        });
+
+        it("emits event Approval", async function () {
+          const allowance = await this.token.allowance(this.owner.address, this.account1.address)
+          await expect(decreaseAllowanceResult).to.emit(this.token, "Approval")
+                  .withArgs(this.owner.address, this.account1.address, amount.sub(allowance))
+        });
+
+        it("owner allowance to account1", async function () {
+          expect(await this.token.allowance(this.owner.address, this.account1.address))
+            .to.equal(amount.sub(amount.div(2)))
+        });
+
+        it("reverts when decreased allowance below zero", async function () {
+
+          await expect(this.token.connect(this.owner)
+                  .decreaseAllowance(this.account1.address, amount.div(2).add(1)))
+                    .to.be.revertedWith("ERC20: decreased allowance below zero")
+        });
+      });
     });
   });
 });
