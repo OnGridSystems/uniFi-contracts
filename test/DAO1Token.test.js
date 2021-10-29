@@ -45,7 +45,7 @@ describe("DAO1 token", function() {
     const amount = ethers.utils.parseEther("1")
     const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000"
 
-    describe("Checking transfer method", function () {
+    describe("Basic transfers", function () {
 
       beforeEach(async function () {
         ownerDAO1Balance = await this.token.balanceOf(this.owner.address)
@@ -58,12 +58,12 @@ describe("DAO1 token", function() {
                 .withArgs(this.owner.address, this.account1.address, amount)
       });
 
-      it("check owner balance after transfer", async function () {
+      it("spender's balance decreased", async function () {
         expect(await this.token.balanceOf(this.owner.address))
           .to.equal(ownerDAO1Balance.sub(amount))
       });
 
-      it("check account1 balance after transfer", async function () {
+      it("receiver's balance increased", async function () {
         expect(await this.token.balanceOf(this.account1.address)).to.equal(amount)
       });
 
@@ -75,7 +75,7 @@ describe("DAO1 token", function() {
 
     });
 
-    describe("Checking approve method", function () {
+    describe("Approve", function () {
 
       beforeEach(async function () {
         approve = await this.token.connect(this.owner)
@@ -87,18 +87,18 @@ describe("DAO1 token", function() {
                 .withArgs(this.owner.address, this.account1.address, amount)
       });
 
-      it("check owner allowance to account1", async function () {
+      it("allowance to account1", async function () {
         expect(await this.token.allowance(this.owner.address, this.account1.address))
           .to.equal(amount)
       });
 
-      it("reverts if account1 has ZERO_ADDRESS", async function () {
+      it("reverts if ZERO_ADDRESS", async function () {
          await expect(this.token.connect(this.owner)
                 .approve(ZERO_ADDRESS, amount))
                   .to.be.revertedWith("ERC20: approve to the zero address")
       });
 
-      describe("Checking transferFrom method", function () {
+      describe("transferFrom", function () {
         beforeEach(async function () {
           ownerDAO1Balance = await this.token.balanceOf(this.owner.address)
           transferFrom = await this.token.connect(this.account1)
@@ -114,17 +114,17 @@ describe("DAO1 token", function() {
                   .withArgs(this.owner.address, this.account2.address, amount)
         });
 
-        it("emits event Approval (decreaseAllowance)", async function () {
+        it("emits event Approval (allowance decreased)", async function () {
           await expect(transferFrom).to.emit(this.token, "Approval")
                   .withArgs(this.owner.address, this.account1.address, 0)
         });
 
-        it("check owner allowance to account1", async function () {
+        it("owner allowance to account1", async function () {
           expect(await this.token.allowance(this.owner.address, this.account1.address))
             .to.equal(0)
         });
 
-        it("check owner balance after transfer", async function () {
+        it("owner balance after transfer", async function () {
           expect(await this.token.balanceOf(this.owner.address))
             .to.equal(ownerDAO1Balance.sub(amount))
         });
@@ -148,7 +148,7 @@ describe("DAO1 token", function() {
       });
     });
 
-    describe("Checking transferOwnership method", function () {
+    describe("transferOwnership", function () {
 
       beforeEach(async function () {
         transferOwnership = await this.token.connect(this.owner)
@@ -161,11 +161,11 @@ describe("DAO1 token", function() {
       });
 
 
-      it("is the owner of the token", async function () {
+      it("owner changed", async function () {
         expect(await this.token.owner()).to.equal(this.account1.address)
       });
 
-      it("reverts if newOwner has ZERO_ADDRESS", async function () {
+      it("reverts if newOwner is ZERO_ADDRESS", async function () {
 
         transferOwnership = this.token.connect(this.account1)
                               .transferOwnership(ZERO_ADDRESS)
@@ -174,7 +174,7 @@ describe("DAO1 token", function() {
       });
     });
 
-    describe("Checking renounceOwnership method", function () {
+    describe("renounceOwnership", function () {
 
       beforeEach(async function () {
         renounceOwnership = await this.token.connect(this.owner).renounceOwnership()
@@ -186,7 +186,7 @@ describe("DAO1 token", function() {
       });
 
 
-      it("contract without an owner", async function () {
+      it("has no owner", async function () {
         expect(await this.token.owner()).to.equal(ZERO_ADDRESS)
       });
     });
