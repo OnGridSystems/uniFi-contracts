@@ -57,8 +57,5 @@ jobs:
     - name: lint-solhint
       run: yarn solhint
 
-    - name: lint-solium
-      run: yarn solium
-
     - name: test
       run: yarn test

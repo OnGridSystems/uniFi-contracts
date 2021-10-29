@@ -172,23 +172,19 @@ describe("DAO1 bridged token", function () {
 
       describe("Burn tokens", function () {
         beforeEach(async function () {
-          await this.token.connect(this.owner).burn(this.owner.address, amount)
+          await this.token.connect(this.owner).burn(amount)
         })
 
         it("owner's balance decreased", async function () {
-          expect(await this.token.balanceOf(this.owner.address)).to.equal(0)
+          expect(await this.token.connect(this.owner).balanceOf(this.owner.address)).to.equal(0)
         })
 
         it("total amount of tokens decreased", async function () {
           expect(await this.token.totalSupply()).to.equal(0)
         })
 
-        it("reverts if ZERO_ADDRESS", async function () {
-          await expect(this.token.connect(this.owner).burn(ZERO_ADDRESS, amount)).to.be.revertedWith("ERC20: burn from the zero address")
-        })
-
         it("reverts if exceeds balance", async function () {
-          await expect(this.token.connect(this.owner).burn(this.owner.address, amount)).to.be.revertedWith("ERC20: burn amount exceeds balance")
+          await expect(this.token.connect(this.owner).burn(amount)).to.be.revertedWith("ERC20: burn amount exceeds balance")
         })
       })
     })
