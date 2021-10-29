@@ -8,6 +8,10 @@ import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
 
+interface OldIERC20 {
+    function transfer(address, uint256) external;
+}
+
 contract UniFiFarmingQuickswap2 is Ownable {
     using SafeMath for uint256;
     using Address for address;
@@ -386,6 +390,6 @@ contract UniFiFarmingQuickswap2 is Ownable {
             "Admin cannot Transfer out Reward Tokens Yet!"
         );
 
-        IERC20(_tokenAddr).transfer(_to, _amount);
+        OldIERC20(_tokenAddr).transfer(_to, _amount);
     }
 }
