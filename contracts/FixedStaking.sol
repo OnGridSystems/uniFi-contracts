@@ -140,7 +140,8 @@ contract FixedStaking is Ownable {
         );
         allocatedTokens = allocatedTokens.add(totalYield);
         stakedTokens = stakedTokens.add(_amount);
-        emit Stake(msg.sender, getStakesLength(msg.sender), _amount, startTime, endTime);
+        uint256 stakeId = getStakesLength(msg.sender).sub(1);
+        emit Stake(msg.sender, stakeId, _amount, startTime, endTime);
         token.safeTransferFrom(msg.sender, address(this), _amount);
     }
 

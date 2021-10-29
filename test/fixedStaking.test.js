@@ -82,12 +82,12 @@ describe("FixedStaking", function () {
           })
 
           it("emits event Stake", async function () {
-            const stakesLength = 1
+            const stakeId = 0
             const depositAmount = 10000
             const startTime = 0
             const endTime = 30 * 24 * 60 * 60
 
-            await expect(stake1).to.emit(this.pool, "Stake").withArgs(this.alice.address, stakesLength, depositAmount, startTime, endTime)
+            await expect(stake1).to.emit(this.pool, "Stake").withArgs(this.alice.address, stakeId, depositAmount, startTime, endTime)
           })
 
           it("Stop() called by owner closes stakes", async function () {
@@ -141,12 +141,12 @@ describe("FixedStaking", function () {
               await expect(stake2).to.emit(this.token, "Transfer").withArgs(this.alice.address, this.pool.address, 20000)
             })
             it("emits event Stake", async function () {
-              const stakesLength = 2
+              const stakeId = 1
               const depositAmount = 20000
               const startTime = 0
               const endTime = 30 * 24 * 60 * 60
 
-              await expect(stake2).to.emit(this.pool, "Stake").withArgs(this.alice.address, stakesLength, depositAmount, startTime, endTime)
+              await expect(stake2).to.emit(this.pool, "Stake").withArgs(this.alice.address, stakeId, depositAmount, startTime, endTime)
             })
 
             it("check stakes length and token balance", async function () {
@@ -947,12 +947,12 @@ describe("FixedStaking", function () {
               })
 
               it("emits event Stake", async function () {
-                const stakesLength = 1
+                const stakeId = 0
                 const depositAmount = 345
                 const startTime = 0
                 const endTime = 30 * 24 * 60 * 60
 
-                await expect(stake1).to.emit(this.pool, "Stake").withArgs(this.bob.address, stakesLength, depositAmount, startTime, endTime)
+                await expect(stake1).to.emit(this.pool, "Stake").withArgs(this.bob.address, stakeId, depositAmount, startTime, endTime)
               })
 
               it("check Bob's stake details", async function () {
