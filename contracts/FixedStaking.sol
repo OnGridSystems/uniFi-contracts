@@ -205,6 +205,12 @@ contract FixedStaking is Ownable {
         emit EmergencyWithdraw(msg.sender, _stakeId, 0);
     }
 
+    function withdrawalPenalties(address _to, uint256 amount) public onlyOwner {
+        require(penalties > amount, "Amount is more than there are penalties");
+        // todo: add DAO1.transfer DAO-44
+        penalties = penalties.sub(amount);
+    }
+
     // Returns block.timestamp, overridable for test purposes.
     function _now() internal view virtual returns (uint256) {
         return block.timestamp;
