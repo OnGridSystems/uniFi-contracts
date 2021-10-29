@@ -19,9 +19,8 @@ describe("UniFiStake", function () {
     this.pool = await this.contract.deploy(this.depositToken.address, this.rewardToken.address)
 
     this.alice_deposit = BigNumber.from("10000")
-    this.half_alice_deposit = BigNumber.from("5000")
-    this.fee = BigNumber.from("50") / BigNumber.from("10000")
-    
+    this.half_alice_deposit = this.alice_deposit.div("2")
+
     await this.depositToken.transfer(this.alice.address, this.alice_deposit)
     await this.depositToken.connect(this.alice).approve(this.pool.address, this.alice_deposit)
 
@@ -45,13 +44,13 @@ describe("UniFiStake", function () {
   describe("deposit function", function () {
     it("deposit token on stake contract", async function () {
       contract_balance = await this.depositToken.balanceOf(this.pool.address)
-      expected_balance = this.alice_deposit - this.alice_deposit * this.fee
+      expected_balance = this.alice_deposit.sub(this.alice_deposit.mul("50").div("10000"))
       expect(expected_balance).to.equal(contract_balance)
     })
 
     it("increase in the total number of deposit tokens during the deposit", async function () {
       contract_balance = await this.pool.totalTokens()
-      expected_balance = this.alice_deposit - this.alice_deposit * this.fee
+      expected_balance = this.alice_deposit.sub(this.alice_deposit.mul("50").div("10000"))
       expect(expected_balance).to.equal(contract_balance)
     })
 
@@ -60,13 +59,13 @@ describe("UniFiStake", function () {
       depositTime = await this.pool.depositTime(this.alice.address)
       blockTime = await network.provider.send("eth_getBlockByNumber", ["latest", false])
       expect(blockTime.timestamp).to.equal(depositTime._hex)
-      expected_deposit = this.alice_deposit - this.alice_deposit * this.fee
+      expected_deposit = this.alice_deposit.sub(this.alice_deposit.mul("50").div("10000"))
       expect(deposit).to.equal(expected_deposit)
     })
 
     it("owner receives fee for the deposit", async function () {
       ownerBalance = await this.depositToken.balanceOf(this.owner.address)
-      balance = this.alice_deposit * this.fee
+      balance = this.alice_deposit.mul("50").div("10000")
       expect(ownerBalance).to.equal(balance)
     })
 
@@ -105,7 +104,6 @@ describe("UniFiStake", function () {
   })
 
   describe("withdraw function", function () {
-    // write checks that the tokens were actually debited from the contract to the owner's address
     it("can't withdraw 0 token", async function () {
       await expect(this.pool.withdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens")
     })
@@ -129,25 +127,30 @@ describe("UniFiStake", function () {
         contract_balance = await this.depositToken.balanceOf(this.pool.address)
         holder_balance = await this.depositToken.balanceOf(this.alice.address)
         pool_balance = await this.pool.depositedTokens(this.alice.address)
-        expected_pool_balance = this.alice_deposit - this.alice_deposit * this.fee - this.half_alice_deposit
-        expect(contract_balance).to.equal(this.alice_deposit - this.alice_deposit * this.fee - this.half_alice_deposit)
-        expect(holder_balance).to.equal(this.half_alice_deposit - this.half_alice_deposit * this.fee)
-        expect(pool_balance).to.equal(expected_pool_balance)
+
+        expected_balance = this.alice_deposit.sub(this.half_alice_deposit).sub(this.alice_deposit.mul("50").div("10000"))
+        expected_holder_balance = this.half_alice_deposit.sub(this.half_alice_deposit.mul("50").div("10000"))
+
+        expect(contract_balance).to.equal(expected_balance)
+        expect(holder_balance).to.equal(expected_holder_balance)
+        expect(pool_balance).to.equal(expected_balance)
       })
 
       it("owner receives fee for the withdraw", async function () {
         await this.pool.connect(this.alice).withdraw(this.half_alice_deposit)
         ownerBalance = await this.depositToken.balanceOf(this.owner.address)
 
-        deposit_fee = this.alice_deposit * this.fee
-        withdraw_fee = this.half_alice_deposit * this.fee
-        expect(ownerBalance).to.equal(deposit_fee + withdraw_fee)
+        deposit_fee = this.alice_deposit.mul("50").div("10000")
+        withdraw_fee = this.half_alice_deposit.mul("50").div("10000")
+        fee = deposit_fee.add(withdraw_fee)
+
+        expect(ownerBalance).to.equal(fee)
       })
 
       it("decrease in the total number of deposit tokens during the withdraw", async function () {
         await this.pool.connect(this.alice).withdraw(this.half_alice_deposit)
         contract_balance = await this.pool.totalTokens()
-        expected_balance = this.alice_deposit - this.alice_deposit * this.fee - this.half_alice_deposit
+        expected_balance = this.alice_deposit.sub(this.half_alice_deposit).sub(this.alice_deposit.mul("50").div("10000"))
         expect(expected_balance).to.equal(contract_balance)
       })
 
@@ -194,9 +197,12 @@ describe("UniFiStake", function () {
         contract_balance = await this.depositToken.balanceOf(this.pool.address)
         holder_balance = await this.depositToken.balanceOf(this.alice.address)
         pool_balance = await this.pool.depositedTokens(this.alice.address)
-        expected_balance = this.alice_deposit - this.alice_deposit * this.fee - this.half_alice_deposit
+
+        expected_balance = this.alice_deposit.sub(this.half_alice_deposit).sub(this.alice_deposit.mul("50").div("10000"))
+        expected_holder_balance = this.half_alice_deposit.sub(this.half_alice_deposit.mul("50").div("10000"))
+
         expect(contract_balance).to.equal(expected_balance)
-        expect(holder_balance).to.equal(this.half_alice_deposit - this.half_alice_deposit * this.fee)
+        expect(holder_balance).to.equal(expected_holder_balance)
         expect(pool_balance).to.equal(expected_balance)
       })
 
@@ -204,15 +210,17 @@ describe("UniFiStake", function () {
         await this.pool.connect(this.alice).emergencyWithdraw(this.half_alice_deposit)
         ownerBalance = await this.depositToken.balanceOf(this.owner.address)
 
-        deposit_fee = this.alice_deposit * this.fee
-        withdraw_fee = this.half_alice_deposit * this.fee
-        expect(ownerBalance).to.equal(deposit_fee + withdraw_fee)
+        deposit_fee = this.alice_deposit.mul("50").div("10000")
+        withdraw_fee = this.half_alice_deposit.mul("50").div("10000")
+        fee = deposit_fee.add(withdraw_fee)
+
+        expect(ownerBalance).to.equal(fee)
       })
 
       it("decrease in the total number of deposit tokens during the emergencyWithdraw", async function () {
         await this.pool.connect(this.alice).emergencyWithdraw(this.half_alice_deposit)
         contract_balance = await this.pool.totalTokens()
-        expected_balance = this.alice_deposit - this.alice_deposit * this.fee - this.half_alice_deposit
+        expected_balance = this.alice_deposit.sub(this.half_alice_deposit).sub(this.alice_deposit.mul("50").div("10000"))
         expect(expected_balance).to.equal(contract_balance)
       })
 
@@ -225,6 +233,101 @@ describe("UniFiStake", function () {
         balance2 = await this.rewardToken.balanceOf(this.alice.address)
         expect(balance1).to.equal(balance2)
       })
+    })
+  })
+
+  describe("function transferAnyERC20Token", function () {
+    it("function only owner", async function () {
+      await expect(this.pool.connect(this.alice).transferAnyERC20Token(this.rewardToken.address, this.alice.address, 1000)).to.be.revertedWith(
+        "Ownable: caller is not the owner"
+      )
+    })
+
+    it("can't transfer out deposit tokens", async function () {
+      await expect(this.pool.transferAnyERC20Token(this.depositToken.address, this.owner.address, 1000)).to.revertedWith(
+        "Admin cannot transfer out deposit tokens from this vault!"
+      )
+    })
+
+    it("can't transfer reward tokens until 'adminCanClaimAfter' time has passed", async function () {
+      await expect(this.pool.transferAnyERC20Token(this.rewardToken.address, this.owner.address, 1000)).to.revertedWith(
+        "Admin cannot Transfer out Reward Tokens Yet!"
+      )
+    })
+
+    it("can transfer bonus tokens 'adminCanClaimAfter' time has passed", async function () {
+      await this.rewardToken.approve(this.pool.address, 1000000)
+      await this.pool.addContractBalance(1000000)
+
+      adminCanClaimAfter = await this.pool.adminCanClaimAfter()
+      await network.provider.send("evm_increaseTime", [parseInt(adminCanClaimAfter) + 1])
+
+      await this.pool.transferAnyERC20Token(this.rewardToken.address, this.alice.address, 1000)
+      alice_balance = await this.rewardToken.balanceOf(this.alice.address)
+      expect(alice_balance).to.equal(1000)
+    })
+
+    it("can transfer other ERC20 tokens", async function () {
+      ERC20 = await this.token.deploy("DAO1", "DAO1", this.owner.address)
+      await ERC20.transfer(this.pool.address, 1000)
+      await this.pool.transferAnyERC20Token(ERC20.address, this.alice.address, 1000)
+
+      alice_balance = await ERC20.balanceOf(this.alice.address)
+      expect(alice_balance).to.equal(1000)
+    })
+
+    it("can't transfer any ERC20 tokens more than the balance", async function () {
+      adminCanClaimAfter = await this.pool.adminCanClaimAfter()
+      await network.provider.send("evm_increaseTime", [parseInt(adminCanClaimAfter) + 1])
+      await expect(this.pool.transferAnyERC20Token(this.rewardToken.address, this.owner.address, 1000)).to.revertedWith(
+        "ERC20: transfer amount exceeds balance"
+      )
+    })
+  })
+
+  describe("function transferAnyOldERC20Token", function () {
+    it("function only owner", async function () {
+      await expect(
+        this.pool.connect(this.alice).transferAnyOldERC20Token(this.rewardToken.address, this.alice.address, 1000)
+      ).to.be.revertedWith("Ownable: caller is not the owner")
+    })
+
+    it("can't transfer out deposit tokens", async function () {
+      await expect(this.pool.transferAnyOldERC20Token(this.depositToken.address, this.owner.address, 1000)).to.revertedWith(
+        "Admin cannot transfer out deposit tokens from this vault!"
+      )
+    })
+
+    it("can't transfer reward tokens until 'adminCanClaimAfter' time has passed", async function () {
+      await expect(this.pool.transferAnyOldERC20Token(this.rewardToken.address, this.owner.address, 1000)).to.revertedWith(
+        "Admin cannot Transfer out Reward Tokens Yet!"
+      )
+    })
+
+    it("can transfer bonus tokens 'adminCanClaimAfter' time has passed", async function () {
+      await this.rewardToken.approve(this.pool.address, 1000000)
+      await this.pool.addContractBalance(1000000)
+      adminCanClaimAfter = await this.pool.adminCanClaimAfter()
+      await network.provider.send("evm_increaseTime", [parseInt(adminCanClaimAfter) + 1])
+      await this.pool.transferAnyOldERC20Token(this.rewardToken.address, this.alice.address, 1000)
+      alice_balance = await this.rewardToken.balanceOf(this.alice.address)
+      expect(alice_balance).to.equal(1000)
+    })
+
+    it("can transfer other ERC20 tokens", async function () {
+      ERC20 = await this.token.deploy("DAO1", "DAO1", this.owner.address)
+      await ERC20.transfer(this.pool.address, 1000)
+      await this.pool.transferAnyOldERC20Token(ERC20.address, this.alice.address, 1000)
+      alice_balance = await ERC20.balanceOf(this.alice.address)
+      expect(alice_balance).to.equal(1000)
+    })
+
+    it("can't transfer any ERC20 tokens more than the balance", async function () {
+      adminCanClaimAfter = await this.pool.adminCanClaimAfter()
+      await network.provider.send("evm_increaseTime", [parseInt(adminCanClaimAfter) + 1])
+      await expect(this.pool.transferAnyOldERC20Token(this.rewardToken.address, this.owner.address, 1000)).to.revertedWith(
+        "ERC20: transfer amount exceeds balance"
+      )
     })
   })
 })
