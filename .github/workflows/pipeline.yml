@@ -13,7 +13,7 @@ on:
 
 jobs:
   build:
-    name: Build
+    name: Lint & Test
     runs-on: ubuntu-18.04
 
     steps:
@@ -38,9 +38,15 @@ jobs:
 
     - name: Installing dependencies
       run: yarn install --frozen-lockfile
-    
-    - name: yarn lint
-      run: yarn lint
 
-    - name: yarn test
+    - name: lint-prettier
+      run: yarn prettier
+
+    - name: lint-solhint
+      run: yarn solhint
+
+    - name: lint-solium
+      run: yarn solium
+
+    - name: test
       run: yarn test
