@@ -57,6 +57,11 @@ describe("FixedStaking", function () {
         expect((await this.pool.getStake(this.alice.address, 1)).stakedAmount).to.equal(amount)
         expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
         expect((await this.pool.getStake(this.alice.address, 1)).totalYield).to.equal(reward)
+
+        activeStake=await this.pool.activeStake(this.alice.address)
+        expect(activeStake[0]).to.equal(true)
+        expect(activeStake[1]).to.equal(true)
+        
         expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(
           BigNumber.from(amount).mul("155").div("10000").div("2")
         )

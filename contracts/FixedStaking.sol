@@ -110,6 +110,17 @@ contract FixedStaking is Ownable {
         return harvestableYield;
     }
 
+    function activeStake(address _userAddress) public view returns(bool[] memory){
+        uint256 length=getStakesLength(_userAddress);
+        bool[] memory activeStakePos = new bool[](length);
+        for (uint256 i = 0; i < length; i = i.add(1)){
+            if (stakes[_userAddress][i].active==true){
+                activeStakePos[i]=true;
+            }
+        }
+        return activeStakePos;
+    }
+
     function start() public onlyOwner {
         stakesOpen = true;
     }
