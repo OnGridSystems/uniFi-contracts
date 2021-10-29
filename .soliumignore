@@ -6,3 +6,6 @@ contracts/MaticUniFiFarmingQuickswap.sol
 contracts/YfDaiFarmingUniswap.sol
 contracts/UniFiFarmingSafeswap.sol
 contracts/MaticUniFiFarmingQuickswap2.sol
+contracts/UniFiFarmingSafeswap.sol
+contracts/MaticUniFiFarmingQuickswap2.sol
+contracts/UniFitoken.sol

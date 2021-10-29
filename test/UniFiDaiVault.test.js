@@ -19,12 +19,11 @@ describe("UniFiStake", function () {
     this.rewardToken = await this.token.deploy("DAO2", "DAO2", this.owner.address)
     this.pool = await this.contract.deploy(this.depositToken.address, this.rewardToken.address)
 
-    this.alice_balance_depositToken = 20000
     this.alice_deposit = 10000
     this.fee = 0.005
 
-    await this.depositToken.transfer(this.alice.address, this.alice_balance_depositToken)
-    await this.depositToken.connect(this.alice).approve(this.pool.address, this.alice_balance_depositToken)
+    await this.depositToken.transfer(this.alice.address, this.alice_deposit)
+    await this.depositToken.connect(this.alice).approve(this.pool.address, this.alice_deposit)
 
     owner_balance = await this.depositToken.balanceOf(this.owner.address)
     await this.depositToken.transfer(this.bob.address, owner_balance)
@@ -69,19 +68,17 @@ describe("UniFiStake", function () {
       expect(ownerBalance).to.equal(balance)
     })
 
-    it("getting a reward for not the first deposits // bad work?", async function () {
+    it("getting a reward for not the first deposits // bad work? Logs above", async function () {
+      await this.depositToken.connect(this.bob).transfer(this.alice.address, this.alice_deposit)
+      await this.depositToken.connect(this.alice).approve(this.pool.address, this.alice_deposit)
+
       await this.rewardToken.approve(this.pool.address, 1000000)
       await this.pool.addContractBalance(1000000)
 
       total_reward = await this.pool.contractBalance()
-      //expect(balance2).to.equal(100000);
-
       balance1 = await this.rewardToken.balanceOf(this.alice.address)
-      balance4 = await this.pool.contractBalance()
-      await this.pool.connect(this.alice).deposit(this.alice_deposit,{from:this.alice.address});
-      //await this.pool.connect(this.alice).claim()
+      await this.pool.connect(this.alice).deposit(this.alice_deposit)
       balance2 = await this.rewardToken.balanceOf(this.alice.address)
-      balance3 = await this.pool.contractBalance()
 
       console.log("total number of reward tokens", total_reward.toString())
       console.log("initial balance of reward tokens", balance1.toString())
@@ -91,16 +88,80 @@ describe("UniFiStake", function () {
     it("can't deposit 0 token", async function () {
       await expect(this.pool.deposit(0)).to.be.revertedWith("Cannot deposit 0 Tokens")
     })
-    //it("can't deposit more than the balance", async function() {
-    //  await expect(this.pool.deposit(ownerBalance,period1)).to.be.revertedWith("Insufficient Token Allowance");
-    //});
-    // !!!! TODO: outputs the ERC20 error code of the contract, then whether it is necessary to check this operation in the contract using require?
+
+    it("can't deposit more than the balance", async function () {
+      await expect(this.pool.deposit(10000)).to.be.revertedWith("ERC20: transfer amount exceeds balance")
+    })
+
     it("not possible to make a deposit after the specified days from the date of creation of the contract", async function () {
       disburseDuration = await this.pool.disburseDuration()
       LOCKUP_TIME = await this.pool.LOCKUP_TIME()
       work_contract_time = disburseDuration - LOCKUP_TIME
       await network.provider.send("evm_increaseTime", [work_contract_time + 1])
       await expect(this.pool.deposit(this.alice_deposit)).to.be.revertedWith("Deposits are closed now!")
+    })
+  })
+
+  describe("withdraw function", function () {
+    // write checks that the tokens were actually debited from the contract to the owner's address
+    it("can't withdraw 0 token", async function () {
+      await expect(this.pool.withdraw(0)).to.be.revertedWith("Cannot withdraw 0 Tokens")
+    })
+
+    it("you can't withdraw until the stake period has passed", async function () {
+      await expect(this.pool.connect(this.alice).withdraw(5000)).to.be.revertedWith("You recently staked, please wait before withdrawing.")
+    })
+
+    describe("Stake period has passed", function () {
+      beforeEach(async function () {
+        LOCKUP_TIME = await this.pool.LOCKUP_TIME()
+        await network.provider.send("evm_increaseTime", [parseInt(LOCKUP_TIME) + 1])
+      })
+
+      it("you can't withdraw more than you have on the balance sheet", async function () {
+        await expect(this.pool.connect(this.alice).withdraw(this.alice_deposit)).to.be.revertedWith("Invalid amount to withdraw")
+      })
+
+      it("withdraw when stake period has passed", async function () {
+        await this.pool.connect(this.alice).withdraw(this.alice_deposit / 2)
+        contract_balance = await this.depositToken.balanceOf(this.pool.address)
+        holder_balance = await this.depositToken.balanceOf(this.alice.address)
+        pool_balance = await this.pool.depositedTokens(this.alice.address)
+        expected_pool_balance = this.alice_deposit * (1 - this.fee) - this.alice_deposit / 2
+        expect(contract_balance).to.equal(this.alice_deposit * (1 - this.fee) - this.alice_deposit / 2)
+        expect(holder_balance).to.equal((this.alice_deposit / 2) * (1 - this.fee))
+        expect(pool_balance).to.equal(expected_pool_balance)
+      })
+
+      it("owner receives fee for the withdraw", async function () {
+        await this.pool.connect(this.alice).withdraw(this.alice_deposit / 2)
+        ownerBalance = await this.depositToken.balanceOf(this.owner.address)
+
+        deposit_fee = this.alice_deposit * this.fee
+        withdraw_fee = (this.alice_deposit / 2) * this.fee
+        expect(ownerBalance).to.equal(deposit_fee + withdraw_fee)
+      })
+
+      it("decrease in the total number of deposit tokens during the withdraw", async function () {
+        await this.pool.connect(this.alice).withdraw(this.alice_deposit / 2)
+        contract_balance = await this.pool.totalTokens()
+        expected_balance = this.alice_deposit * (1 - this.fee) - this.alice_deposit / 2
+        expect(expected_balance).to.equal(contract_balance)
+      })
+
+      it("getting a reward when withdrawing funds // bad work? Logs above", async function () {
+        await this.rewardToken.approve(this.pool.address, 1000000)
+        await this.pool.addContractBalance(1000000)
+
+        total_reward = await this.pool.contractBalance()
+        balance1 = await this.rewardToken.balanceOf(this.alice.address)
+        await this.pool.connect(this.alice).withdraw(this.alice_deposit / 2)
+        balance2 = await this.rewardToken.balanceOf(this.alice.address)
+
+        console.log("total number of reward tokens", total_reward.toString())
+        console.log("initial balance of reward tokens", balance1.toString())
+        console.log("the balance of reward tokens after receiving the reward", balance2.toString())
+      })
     })
   })
 })
