@@ -35,12 +35,26 @@ describe("FixedStaking", function () {
 
     describe("Alice deposited", function () {
       beforeEach(async function () {
+        await this.pool.start()
         await this.pool.stake(10000)
         reward = BigNumber.from("10000").mul("155").div("10000")
       })
 
-      it("contract states", async function () {
-        expect(await this.pool.totalStaked()).to.equal("10000")
+      it("Stop() called by owner closes stakes", async function () {
+        await this.pool.stop()
+        expect(await this.pool.stakesOpen()).to.equal(false)
+      })
+
+      it("Stake should revert if stakes are not open", async function () {
+        await this.pool.stop()
+        await expect(this.pool.stake(10000)).to.be.revertedWith("stake: not open")
+      })
+
+      it("Non-owner can't stop staking", async function () {
+        await expect(this.pool.connect(this.bob).stop()).to.be.revertedWith("Ownable: caller is not the owner")
+      })
+
+      it("her stake is visible", async function () {
         expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
       })
 

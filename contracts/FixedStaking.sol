@@ -106,6 +106,7 @@ contract FixedStaking is Ownable {
 
     // Deposit user's stake
     function stake(uint256 _amount) public {
+        require(stakesOpen, "stake: not open");
         // todo: add DAO1.transferFrom DAO-44
         uint256 startTime = _now();
         uint256 endTime = _now().add(stakeDurationDays.mul(1 days));
