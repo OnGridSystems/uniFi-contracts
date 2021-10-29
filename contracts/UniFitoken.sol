@@ -52,7 +52,7 @@ interface IERC20 {
      *
      * IMPORTANT: Beware that changing an allowance with this method brings the risk
      * that someone may use both the old and the new allowance by unfortunate
-     * transaction ordering. One possible solutionDAO1Stakeissuecomment-263524729
+     * transaction ordering. One possible solutionUniFiStakeissuecomment-263524729
      *
      * Emits an {Approval} event.
      */
@@ -116,7 +116,7 @@ interface IERC20Metadata is IERC20 {
     function decimals() external view returns (uint8);
 }
 
-// File: @openzeppelin/contracts/utils/Context.solDAO1Stake
+// File: @openzeppelin/contracts/utils/Context.solUniFiStake
 
 /*
  * @dev Provides information about the current execution context, including the
@@ -570,17 +570,17 @@ abstract contract Ownable is Context {
     }
 }
 
-// File: contracts/DAO1.sol
+// File: contracts/UniFi.sol
 
 // import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 //
-// contract DAO1 is ERC20 {
-//     constructor(uint256 initialSupply) ERC20("DAO1", "DAO1") {
+// contract UniFi is ERC20 {
+//     constructor(uint256 initialSupply) ERC20("UniFi", "UniFi") {
 //         _mint(msg.sender, initialSupply);
 //     }
 // }
 
-contract DAO1 is ERC20, Ownable {
+contract UniFi is ERC20, Ownable {
     constructor(
         string memory _name,
         string memory _symbol,
