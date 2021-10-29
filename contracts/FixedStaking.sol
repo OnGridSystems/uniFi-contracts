@@ -37,8 +37,9 @@ contract FixedStaking is Ownable {
     // If the user withdraws before stake expiration, he pays `earlyUnstakeFee`
     uint256 public earlyUnstakeFee;
 
-    // penalties for early withdraw stake
-    uint256 public penalties;
+    // early withdrawal fees are accounted separately
+    // and can be withdrawn by the owner using withdrawCollectedFees(address _to, uint256 amount)
+    uint256 public collectedFees;
 
     // Sum of rewards that staker will receive for his stake
     // nominated in basis points (1/10000) of staked amount
@@ -142,7 +143,7 @@ contract FixedStaking is Ownable {
             stakes[msg.sender][_stakeId].endTime = _now();
             stakes[msg.sender][_stakeId].totalYield = harvestedYield.add(harvestableYield);
             totalStaked = totalStaked.sub(stakedAmount);
-            penalties = penalties.add(stakedAmount.mul(earlyUnstakeFee).div(10000));
+            collectedFees = collectedFees.add(stakedAmount.mul(earlyUnstakeFee).div(10000));
             early = true;
         }
 
@@ -151,16 +152,17 @@ contract FixedStaking is Ownable {
 
     function harvest(uint256 _stakeId) public {
         (, , , , , uint256 harvestedYield, , uint256 harvestableYield) = getStake(msg.sender, _stakeId);
+        require(harvestableYield != 0, "harvestableYield is zero");
         // todo: add DAO1.transfer DAO-44
         stakes[msg.sender][_stakeId].harvestedYield = harvestedYield.add(harvestableYield);
         stakes[msg.sender][_stakeId].lastHarvestTime = _now();
         emit Harvest(msg.sender, _stakeId, harvestableYield, _now());
     }
 
-    function withdrawalPenalties(address _to, uint256 amount) public onlyOwner {
-        require(penalties > amount, "Amount is more than there are penalties");
+    function withdrawCollectedFees(address _to, uint256 amount) public onlyOwner {
+        require(collectedFees >= amount, "Amount is more than there are collectedFees!");
         // todo: add DAO1.transfer DAO-44
-        penalties = penalties.sub(amount);
+        collectedFees = collectedFees.sub(amount);
     }
 
     // Returns block.timestamp, overridable for test purposes.
