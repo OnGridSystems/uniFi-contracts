@@ -46,7 +46,7 @@ contract FixedStaking is Ownable {
 
     event Stake(address indexed user, uint256 indexed stakeId, uint256 amount, uint256 startTime, uint256 endTime);
 
-    event Unstake(address indexed user, uint256 indexed stakeId, uint256 amount, uint256 startTime, uint256 endTime);
+    event Unstake(address indexed user, uint256 indexed stakeId, uint256 amount, uint256 startTime, uint256 endTime, bool early);
 
     event EmergencyWithdraw(address indexed user, uint256 indexed stakeId, uint256 amount);
 
@@ -90,40 +90,11 @@ contract FixedStaking is Ownable {
         totalYield = _stake.totalYield;
         harvestedYield = _stake.harvestedYield;
         lastHarvestTime = _stake.lastHarvestTime;
-        harvestableYield = calculateHarvestableYield(
-            _stake.totalYield,
-            _stake.startTime,
-            _stake.endTime,
-            _stake.lastHarvestTime,
-            _stake.harvestedYield
-        );
-    }
-
-    function calculateHarvestableYield(
-        uint256 totalYield,
-        uint256 startTime,
-        uint256 endTime,
-        uint256 lastHarvestTime,
-        uint256 harvestedYield
-    ) private view returns (uint256) {
-        uint256 harvestableYield;
         if (_now() > endTime) {
             harvestableYield = totalYield.sub(harvestedYield);
         } else {
             harvestableYield = totalYield.mul(_now().sub(lastHarvestTime)).div(endTime.sub(startTime));
         }
-        return harvestableYield;
-    }
-
-    function activeStake(address _userAddress) public view returns (bool[] memory) {
-        uint256 length = getStakesLength(_userAddress);
-        bool[] memory activeStakePos = new bool[](length);
-        for (uint256 i = 0; i < length; i = i.add(1)) {
-            if (stakes[_userAddress][i].active == true) {
-                activeStakePos[i] = true;
-            }
-        }
-        return activeStakePos;
     }
 
     function start() public onlyOwner {
@@ -156,46 +127,34 @@ contract FixedStaking is Ownable {
 
     // Withdraw user's stake
     function unstake(uint256 _stakeId) public {
-        StakeInfo memory _stake = stakes[msg.sender][_stakeId];
-        require(_stake.active == true, "Stake is not active!");
-        require(_now() > _stake.endTime, "Deadline for unstake has not passed!");
-        // todo: add DAO1.transfer amount DAO-44
-        stakes[msg.sender][_stakeId].active = false;
-        totalStaked = totalStaked.sub(_stake.stakedAmount);
-        emit Unstake(msg.sender, _stakeId, _stake.stakedAmount, _stake.startTime, _stake.endTime);
-    }
-
-    // early withdraw user's stake with payment of a fine
-    function earlyUnstake(uint256 _stakeId) public {
-        StakeInfo memory _stake = stakes[msg.sender][_stakeId];
-        require(_stake.active == true, "Stake is not active!");
-        // todo: add DAO1.transfer amount-amount*earlyUnstakeFee DAO-44
-        uint256 harvestableYield = calculateHarvestableYield(
-            _stake.totalYield,
-            _stake.startTime,
-            _stake.endTime,
-            _stake.lastHarvestTime,
-            _stake.harvestedYield
+        (bool active, uint256 stakedAmount, uint256 startTime, uint256 endTime, , uint256 harvestedYield, , uint256 harvestableYield) = getStake(
+            msg.sender,
+            _stakeId
         );
-        stakes[msg.sender][_stakeId].active = false;
-        stakes[msg.sender][_stakeId].endTime = _now();
-        stakes[msg.sender][_stakeId].totalYield = _stake.harvestedYield.add(harvestableYield);
-        totalStaked = totalStaked.sub(_stake.stakedAmount);
-        penalties = penalties.add(_stake.stakedAmount.mul(earlyUnstakeFee).div(10000));
-        emit Unstake(msg.sender, _stakeId, _stake.stakedAmount, _stake.startTime, _stake.endTime);
+        bool early;
+        require(active, "Stake is not active!");
+        if (_now() > endTime) {
+            // todo: add DAO1.transfer amount DAO-44
+            stakes[msg.sender][_stakeId].active = false;
+            totalStaked = totalStaked.sub(stakedAmount);
+            early = false;
+        } else {
+            // todo: add DAO1.transfer amount-amount*earlyUnstakeFee DAO-44
+            stakes[msg.sender][_stakeId].active = false;
+            stakes[msg.sender][_stakeId].endTime = _now();
+            stakes[msg.sender][_stakeId].totalYield = harvestedYield.add(harvestableYield);
+            totalStaked = totalStaked.sub(stakedAmount);
+            penalties = penalties.add(stakedAmount.mul(earlyUnstakeFee).div(10000));
+            early = true;
+        }
+
+        emit Unstake(msg.sender, _stakeId, stakedAmount, startTime, endTime, early);
     }
 
     function harvest(uint256 _stakeId) public {
-        StakeInfo memory _stake = stakes[msg.sender][_stakeId];
-        uint256 harvestableYield = calculateHarvestableYield(
-            _stake.totalYield,
-            _stake.startTime,
-            _stake.endTime,
-            _stake.lastHarvestTime,
-            _stake.harvestedYield
-        );
+        (, , , , , uint256 harvestedYield, , uint256 harvestableYield) = getStake(msg.sender, _stakeId);
         // todo: add DAO1.transfer DAO-44
-        stakes[msg.sender][_stakeId].harvestedYield = stakes[msg.sender][_stakeId].harvestedYield.add(harvestableYield);
+        stakes[msg.sender][_stakeId].harvestedYield = harvestedYield.add(harvestableYield);
         stakes[msg.sender][_stakeId].lastHarvestTime = _now();
         emit Harvest(msg.sender, _stakeId, harvestableYield, _now());
     }

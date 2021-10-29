@@ -42,9 +42,6 @@ describe("FixedStaking", function () {
       it("contract states", async function () {
         expect(await this.pool.totalStaked()).to.equal("10000")
         expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
-        activeStake = await this.pool.activeStake(this.alice.address)
-        expect(activeStake.length).to.equal(1)
-        expect(activeStake[0]).to.equal(true)
       })
 
       it("her stake is visible", async function () {
@@ -92,7 +89,7 @@ describe("FixedStaking", function () {
 
         describe("earlyUnstake", function () {
           beforeEach(async function () {
-            await this.pool.earlyUnstake(0)
+            await this.pool.unstake(0)
           })
           describe("function withdrawalPenalties", function () {
             it("not possible when amount is greater than the penalties", async function () {
@@ -110,9 +107,6 @@ describe("FixedStaking", function () {
           it("contract states", async function () {
             expect(await this.pool.totalStaked()).to.equal("0")
             expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
-            activeStake = await this.pool.activeStake(this.alice.address)
-            expect(activeStake.length).to.equal(1)
-            expect(activeStake[0]).to.equal(false)
             expect(await this.pool.penalties()).to.equal(reward)
           })
 
@@ -159,10 +153,6 @@ describe("FixedStaking", function () {
           expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(BigNumber.from("1700000000").add(days.mul("15")))
         })
 
-        it("unstake is not allowed because the time has not expired", async function () {
-          await expect(this.pool.unstake(0)).to.be.revertedWith("Deadline for unstake has not passed!")
-        })
-
         describe("+ 15 days (entire interval) passed", function () {
           beforeEach(async function () {
             await this.pool.increaseCurrentTime(days.mul("15"))
@@ -180,10 +170,6 @@ describe("FixedStaking", function () {
               (await this.pool.getStake(this.alice.address, 0)).startTime
             )
             expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward)
-          })
-
-          it("unstake is not allowed because the time has not expired", async function () {
-            await expect(this.pool.unstake(0)).to.be.revertedWith("Deadline for unstake has not passed!")
           })
 
           it("harvest", async function () {
@@ -229,9 +215,6 @@ describe("FixedStaking", function () {
               it("contract states", async function () {
                 expect(await this.pool.totalStaked()).to.equal("0")
                 expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
-                activeStake = await this.pool.activeStake(this.alice.address)
-                expect(activeStake.length).to.equal(1)
-                expect(activeStake[0]).to.equal(false)
               })
               it("can't second time unstacke position", async function () {
                 await expect(this.pool.unstake(0)).to.be.revertedWith("Stake is not active!")
