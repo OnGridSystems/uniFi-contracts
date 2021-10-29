@@ -10,7 +10,7 @@
     "build": "hardhat compile",
     "console": "hardhat console",
     "test": "hardhat test",
-    "test:coverage": "cross-env NODE_OPTIONS=\"--max-old-space-size=2048\" hardhat coverage",
+    "test:coverage": "hardhat coverage",
     "test:gas": "cross-env REPORT_GAS=true yarn test",
     "prettier": "prettier --write test/*.js && prettier --write contracts/*.sol contracts/*/*.sol",
     "solhint": "solhint -c .solhint.json contracts/*.sol contracts/*/*.sol",
@@ -38,7 +38,8 @@
     "hardhat": "^2.4.1",
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-beta.13",
-    "solhint": "^3.3.6"
+    "solhint": "^3.3.6",
+    "solidity-coverage": "^0.7.16"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.2.0"
