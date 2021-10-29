@@ -522,6 +522,9 @@ describe("FixedStaking", function () {
             expect((await this.pool.getStake(this.bob.address, 0)).harvestedYield).to.equal("0")
             expect((await this.pool.getStake(this.bob.address, 0)).totalYield).to.equal(BigNumber.from("345").mul("155").div("10000"))
           })
+          it("Non-owner can't stop staking", async function () {
+            await expect(this.pool.connect(this.bob).stop()).to.be.revertedWith("Ownable: caller is not the owner")
+          })
         })
       })
     })
