@@ -86,6 +86,17 @@ describe("L1 Bridge", function () {
       ).to.be.revertedWith("NOT_ENOUGH_BALANCE")
     })
 
+    it("Non-oracle cannot call finalizeInboundTransfer", async function () {
+      await expect(
+        this.bridge
+          .finalizeInboundTransfer(
+            this.owner.address,
+            "0xb4bc6ad84cfeebaa482049e38e64e3b21e20e755bde80740417845c79c180af2",
+            parseEther("1000000")
+          )
+      ).to.be.reverted
+    })
+
     describe("then first holder withdraws (oracle calls finalizeInboundTransfer about it)", function () {
       beforeEach(async function () {
         await this.bridge
