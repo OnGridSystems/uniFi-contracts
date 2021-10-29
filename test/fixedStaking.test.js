@@ -43,6 +43,7 @@ describe("FixedStaking", function () {
         expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
         expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("123")
         expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
+        expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal((BigNumber.from("123")).mul("155").div("10000"))
       })
 
       it("second stake of Alice", async function () {
@@ -51,6 +52,7 @@ describe("FixedStaking", function () {
         expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(true)
         expect((await this.pool.getStake(this.alice.address, 1)).stakedAmount).to.equal("667")
         expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
+        expect((await this.pool.getStake(this.alice.address, 1)).totalYield).to.equal((BigNumber.from("667")).mul("155").div("10000"))
       })
 
       describe("15 days (half) passed", function () {
@@ -63,6 +65,7 @@ describe("FixedStaking", function () {
           expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
           expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("123")
           expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
+          expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal((BigNumber.from("123")).mul("155").div("10000"))
         })
 
         describe("+ 15 days (entire interval) passed", function () {
@@ -75,6 +78,7 @@ describe("FixedStaking", function () {
             expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
             expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("123")
             expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
+            expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal((BigNumber.from("123")).mul("155").div("10000"))
           })
 
           describe("+ 1 day passed (all expired))", function () {
@@ -87,6 +91,7 @@ describe("FixedStaking", function () {
               expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
               expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("123")
               expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
+              expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal((BigNumber.from("123")).mul("155").div("10000"))
             })
           })
         })
@@ -102,6 +107,7 @@ describe("FixedStaking", function () {
           expect((await this.pool.getStake(this.bob.address, 0)).active).to.equal(true)
           expect((await this.pool.getStake(this.bob.address, 0)).stakedAmount).to.equal("345")
           expect((await this.pool.getStake(this.bob.address, 0)).harvestedYield).to.equal("0")
+          expect((await this.pool.getStake(this.bob.address, 0)).totalYield).to.equal((BigNumber.from("345")).mul("155").div("10000"))
         })
       })
     })

@@ -99,20 +99,22 @@ contract FixedStaking is Ownable {
     // Deposit user's stake
     function stake(uint256 _amount) public {
         // todo: add DAO1.transferFrom DAO-44
+        uint256 startTime = _now();
+        uint256 endTime = _now().add(stakeDurationDays.mul(1 days));
         stakes[msg.sender].push(
             StakeInfo({
                 active: true,
                 stakedAmount: _amount,
-                startTime: _now(),
-                endTime: _now().add(stakeDurationDays.mul(1 days)),
-                totalYield: 0, // todo DAO-41
+                startTime: startTime,
+                endTime: endTime,
+                totalYield: _amount.mul(rewardRate).div(10000), 
                 harvestedYield: 0, // todo will be mutated by harvest() DAO-42
-                lastHarvestTime: _now() //todo will be mutated by harvest() DAO-42
+                lastHarvestTime: startTime //todo will be mutated by harvest() DAO-42
             })
         );
-        emit Stake(msg.sender, 0, _amount, 0, 0);
+        emit Stake(msg.sender, getStakesLength(msg.sender), _amount, startTime, endTime);
     }
-
+    
     // Withdraw user's stake
     function unstake(uint256 _stakeId) public {
         // require the stake is active DAO-43
