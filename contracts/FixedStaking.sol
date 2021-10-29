@@ -37,6 +37,9 @@ contract FixedStaking is Ownable {
     // If the user withdraws before stake expiration, he pays `earlyUnstakeFee`
     uint256 public earlyUnstakeFee;
 
+    // penalties for early withdraw stake
+    uint256 public penalties;
+
     // Sum of rewards that staker will receive for his stake
     // nominated in basis points (1/10000) of staked amount
     uint256 public rewardRate;
@@ -159,6 +162,26 @@ contract FixedStaking is Ownable {
         // todo: add DAO1.transfer amount DAO-44
         stakes[msg.sender][_stakeId].active = false;
         totalStaked = totalStaked.sub(_stake.stakedAmount);
+        emit Unstake(msg.sender, _stakeId, _stake.stakedAmount, _stake.startTime, _stake.endTime);
+    }
+
+    // early withdraw user's stake with payment of a fine
+    function earlyUnstake(uint256 _stakeId) public {
+        StakeInfo memory _stake = stakes[msg.sender][_stakeId];
+        require(_stake.active == true, "Stake is not active!");
+        // todo: add DAO1.transfer amount-amount*earlyUnstakeFee DAO-44
+        uint256 harvestableYield = calculateHarvestableYield(
+            _stake.totalYield,
+            _stake.startTime,
+            _stake.endTime,
+            _stake.lastHarvestTime,
+            _stake.harvestedYield
+        );
+        stakes[msg.sender][_stakeId].active = false;
+        stakes[msg.sender][_stakeId].endTime = _now();
+        stakes[msg.sender][_stakeId].totalYield = _stake.harvestedYield.add(harvestableYield);
+        totalStaked = totalStaked.sub(_stake.stakedAmount);
+        penalties = penalties.add(_stake.stakedAmount.mul(earlyUnstakeFee).div(10000));
         emit Unstake(msg.sender, _stakeId, _stake.stakedAmount, _stake.startTime, _stake.endTime);
     }
 
