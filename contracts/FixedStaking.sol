@@ -86,14 +86,6 @@ contract FixedStaking is Ownable {
     }
 
     /**
-     * @dev get the amount of available tokens neither staked nor allocated for rewards
-     * @return amount of unallocated tokens
-     */
-    function unallocatedTokens() public view returns (uint256) {
-        return token.balanceOf(address(this)).sub(stakedTokens).sub(allocatedTokens);
-    }
-
-    /**
      * @dev the owner is able to withdraw excess tokens to collect early unstake fees or to reuse unused funds
      * suitable for assets rebalancing between staking contracts.
      * @param _to  address who will receive the funds
@@ -102,57 +94,6 @@ contract FixedStaking is Ownable {
     function withdrawUnallocatedTokens(address _to, uint256 _amount) public onlyOwner {
         require(unallocatedTokens() >= _amount, "Not enough unallocatedTokens");
         token.safeTransfer(_to, _amount);
-    }
-
-    /**
-     * @dev get the count of user's stakes. Used on frontend to iterate and display individual stakes
-     * @param _userAddress account of staker
-     * @return stakes
-     */
-    function getStakesLength(address _userAddress) public view returns (uint256) {
-        return stakes[_userAddress].length;
-    }
-
-    /**
-     * @dev get the individual stake parameters of the user
-     * @param _userAddress account of staker
-     * @param _stakeId stake index
-     * @return staked the status of stake
-     * @return stakedAmount the number of deposited tokens
-     * @return startTime the moment of stake start
-     * @return endTime the time when unstaking (w.o. penalties) becomes possible
-     * @return totalYield entire yield for the stake (totally released on endTime)
-     * @return harvestedYield The part of yield user harvested already
-     * @return lastHarvestTime The time of last harvest event
-     * @return harvestableYield The unlocked part of yield available for harvesting
-     */
-    function getStake(address _userAddress, uint256 _stakeId)
-        public
-        view
-        returns (
-            bool staked,
-            uint256 stakedAmount,
-            uint256 startTime,
-            uint256 endTime,
-            uint256 totalYield, // Entire yield for the stake (totally released on endTime)
-            uint256 harvestedYield, // The part of yield user harvested already
-            uint256 lastHarvestTime, // The time of last harvest event
-            uint256 harvestableYield // The unlocked part of yield available for harvesting
-        )
-    {
-        StakeInfo memory _stake = stakes[_userAddress][_stakeId];
-        staked = _stake.staked;
-        stakedAmount = _stake.stakedAmount;
-        startTime = _stake.startTime;
-        endTime = _stake.endTime;
-        totalYield = _stake.totalYield;
-        harvestedYield = _stake.harvestedYield;
-        lastHarvestTime = _stake.lastHarvestTime;
-        if (_now() > endTime) {
-            harvestableYield = totalYield.sub(harvestedYield);
-        } else {
-            harvestableYield = totalYield.mul(_now().sub(lastHarvestTime)).div(endTime.sub(startTime));
-        }
     }
 
     /**
@@ -246,6 +187,65 @@ contract FixedStaking is Ownable {
         stakes[msg.sender][_stakeId].harvestedYield = harvestedYield.add(harvestableYield);
         stakes[msg.sender][_stakeId].lastHarvestTime = _now();
         emit Harvest(msg.sender, _stakeId, harvestableYield, _now());
+    }
+
+    /**
+     * @dev get the amount of available tokens neither staked nor allocated for rewards
+     * @return amount of unallocated tokens
+     */
+    function unallocatedTokens() public view returns (uint256) {
+        return token.balanceOf(address(this)).sub(stakedTokens).sub(allocatedTokens);
+    }
+
+    /**
+     * @dev get the count of user's stakes. Used on frontend to iterate and display individual stakes
+     * @param _userAddress account of staker
+     * @return stakes
+     */
+    function getStakesLength(address _userAddress) public view returns (uint256) {
+        return stakes[_userAddress].length;
+    }
+
+    /**
+     * @dev get the individual stake parameters of the user
+     * @param _userAddress account of staker
+     * @param _stakeId stake index
+     * @return staked the status of stake
+     * @return stakedAmount the number of deposited tokens
+     * @return startTime the moment of stake start
+     * @return endTime the time when unstaking (w.o. penalties) becomes possible
+     * @return totalYield entire yield for the stake (totally released on endTime)
+     * @return harvestedYield The part of yield user harvested already
+     * @return lastHarvestTime The time of last harvest event
+     * @return harvestableYield The unlocked part of yield available for harvesting
+     */
+    function getStake(address _userAddress, uint256 _stakeId)
+        public
+        view
+        returns (
+            bool staked,
+            uint256 stakedAmount,
+            uint256 startTime,
+            uint256 endTime,
+            uint256 totalYield, // Entire yield for the stake (totally released on endTime)
+            uint256 harvestedYield, // The part of yield user harvested already
+            uint256 lastHarvestTime, // The time of last harvest event
+            uint256 harvestableYield // The unlocked part of yield available for harvesting
+        )
+    {
+        StakeInfo memory _stake = stakes[_userAddress][_stakeId];
+        staked = _stake.staked;
+        stakedAmount = _stake.stakedAmount;
+        startTime = _stake.startTime;
+        endTime = _stake.endTime;
+        totalYield = _stake.totalYield;
+        harvestedYield = _stake.harvestedYield;
+        lastHarvestTime = _stake.lastHarvestTime;
+        if (_now() > endTime) {
+            harvestableYield = totalYield.sub(harvestedYield);
+        } else {
+            harvestableYield = totalYield.mul(_now().sub(lastHarvestTime)).div(endTime.sub(startTime));
+        }
     }
 
     // Returns block.timestamp, overridable for test purposes.
