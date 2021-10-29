@@ -107,7 +107,7 @@ contract FixedStaking is Ownable {
     // Deposit user's stake
     function stake(uint256 _amount) public {
         require(stakesOpen, "stake: not open");
-        // todo: add UniFi.transferFrom DAO-44
+        token.transferFrom(msg.sender, address(this), _amount);
         uint256 startTime = _now();
         uint256 endTime = _now().add(stakeDurationDays.mul(1 days));
         stakes[msg.sender].push(
@@ -134,17 +134,19 @@ contract FixedStaking is Ownable {
         bool early;
         require(active, "Stake is not active!");
         if (_now() > endTime) {
-            // todo: add UniFi.transfer amount DAO-44
+            token.transfer(msg.sender, stakedAmount);
             stakes[msg.sender][_stakeId].active = false;
             totalStaked = totalStaked.sub(stakedAmount);
             early = false;
         } else {
-            // todo: add UniFi.transfer amount-amount*earlyUnstakeFee DAO-44
+            uint256 fee = stakedAmount.mul(earlyUnstakeFee).div(10000);
+            uint256 amountToTransfer = stakedAmount.sub(fee);
+            token.transfer(msg.sender, amountToTransfer);
             stakes[msg.sender][_stakeId].active = false;
             stakes[msg.sender][_stakeId].endTime = _now();
             stakes[msg.sender][_stakeId].totalYield = harvestedYield.add(harvestableYield);
             totalStaked = totalStaked.sub(stakedAmount);
-            collectedFees = collectedFees.add(stakedAmount.mul(earlyUnstakeFee).div(10000));
+            collectedFees = collectedFees.add(fee);
             early = true;
         }
 
@@ -154,15 +156,15 @@ contract FixedStaking is Ownable {
     function harvest(uint256 _stakeId) public {
         (, , , , , uint256 harvestedYield, , uint256 harvestableYield) = getStake(msg.sender, _stakeId);
         require(harvestableYield != 0, "harvestableYield is zero");
-        // todo: add UniFi.transfer DAO-44
+        token.transfer(msg.sender, harvestableYield);
         stakes[msg.sender][_stakeId].harvestedYield = harvestedYield.add(harvestableYield);
         stakes[msg.sender][_stakeId].lastHarvestTime = _now();
         emit Harvest(msg.sender, _stakeId, harvestableYield, _now());
     }
 
-    function withdrawCollectedFees(address _to, uint256 amount) public onlyOwner {
+    function withdrawCollectedFees(address to, uint256 amount) public onlyOwner {
         require(collectedFees >= amount, "Amount is more than there are collectedFees!");
-        // todo: add UniFi.transfer DAO-44
+        token.transfer(to, amount);
         collectedFees = collectedFees.sub(amount);
     }
 
