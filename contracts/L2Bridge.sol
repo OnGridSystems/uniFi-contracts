@@ -53,7 +53,7 @@ contract L2Bridge is AccessControl {
         require(address(_l2Token) != address(0), "ZERO_TOKEN");
         l1Token = _l1Token;
         l2Token = _l2Token;
-        _setupRole(ORACLE_ROLE, msg.sender);
+        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
     /**

@@ -20,6 +20,8 @@ describe("L2Bridge", function () {
     this.bridge = await this.L2BridgeFactory.deploy(this.l1Token.address, this.token.address)
     const BRIDGE_ROLE = await this.token.BRIDGE_ROLE()
     await this.token.grantRole(BRIDGE_ROLE, this.bridge.address)
+    const ORACLE_ROLE = await this.bridge.ORACLE_ROLE()
+    await this.bridge.grantRole(ORACLE_ROLE, this.oracle.address)
   })
 
   it("should be deployed", async function () {
@@ -38,17 +40,17 @@ describe("L2Bridge", function () {
 
   it("finalizeInboundTransfer: unable to mint 0 tokens", async function () {
     expect(
-      this.bridge.finalizeInboundTransfer(this.holder.address, "0x117ddadadc7b8d342cf48513fef06a2cba15dfb9c488dc51aefc998abcefb52b", 0)
+      this.bridge
+        .connect(this.oracle)
+        .finalizeInboundTransfer(this.holder.address, "0x117ddadadc7b8d342cf48513fef06a2cba15dfb9c488dc51aefc998abcefb52b", 0)
     ).to.be.revertedWith("Cannot mint 0 Tokens")
   })
 
   describe("oracle calls finalizeInboundTransfer", function () {
     beforeEach(async function () {
-      await this.bridge.finalizeInboundTransfer(
-        this.holder.address,
-        "0x117ddadadc7b8d342cf48513fef06a2cba15dfb9c488dc51aefc998abcefb52b",
-        "123456"
-      )
+      await this.bridge
+        .connect(this.oracle)
+        .finalizeInboundTransfer(this.holder.address, "0x117ddadadc7b8d342cf48513fef06a2cba15dfb9c488dc51aefc998abcefb52b", "123456")
     })
 
     it("l2token supply increased", async function () {
