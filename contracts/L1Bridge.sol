@@ -16,7 +16,7 @@ contract L1Bridge {
     // L1Token amounts locked on the bridge
     mapping(address => uint256) public balances;
 
-    event Deposit(address owner, uint256 amount);
+    event DepositInitiated(address indexed l1Token, address indexed _from, address indexed _to, uint256 _amount);
     event Withdraw(address owner, uint256 amount);
 
     constructor(IERC20 _l1Token, IERC20 _l2Token) {
@@ -27,23 +27,16 @@ contract L1Bridge {
     }
 
     /**
-     * @dev Deposit the "quantity" of DAO1 tokens to the reserve, increasing the balance of tokens
-     * on the contract for further use it by the contract.
-     * @param _amount Deposit amount
-     * Requirements:
-     *
-     * - amount cannot be zero.
-     * - the caller must have a balance of at least `amount`.
-     * - the caller must have an allowance to the address of the contract at least `amount`.
+     * @notice Initiates a deposit from L1 to L2; callable by any tokenholder.
+     * The amount should be approved by the holder
+     * @param _to L2 address of destination
+     * @param _amount Token amount to bridge
      */
-
-    function deposit(uint256 _amount) external payable {
+    function outboundTransfer(address _to, uint256 _amount) external {
         require(_amount > 0, "Cannot deposit 0 Tokens");
-
         balances[msg.sender] = balances[msg.sender].add(_amount);
-
         require(l1Token.transferFrom(msg.sender, address(this), _amount), "Insufficient Token Allowance");
-        emit Deposit(msg.sender, _amount);
+        emit DepositInitiated(address(l1Token), msg.sender, _to, _amount);
     }
 
     /**

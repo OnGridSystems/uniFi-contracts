@@ -8,6 +8,7 @@ describe("L1 Bridge", function () {
     this.account1 = this.signers[1]
     // code on L2 is not callable directly, so we take just random address
     this.l2Token = this.signers[2]
+    this.l2holder = this.signers[3]
 
     this.TokenFactory = await ethers.getContractFactory("DAO1")
     this.L1BridgeFactory = await ethers.getContractFactory("L1Bridge")
@@ -28,27 +29,22 @@ describe("L1 Bridge", function () {
   })
 
   it("impossible to deposit zero tokens", async function () {
-    expect(this.bridge.deposit(0)).to.be.revertedWith("Cannot deposit 0 Tokens")
+    expect(this.bridge.outboundTransfer(this.l2holder.address, 0)).to.be.revertedWith("Cannot deposit 0 Tokens")
   })
 
   it("impossible to deposit without allowance", async function () {
-    await expect(this.bridge.deposit(1)).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
+    await expect(this.bridge.outboundTransfer(this.l2holder.address, "1234")).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
   })
 
   it("impossible to deposit more than allowance", async function () {
     await this.token.approve(this.bridge.address, "12")
-    await expect(this.bridge.deposit(15)).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
-  })
-
-  it("impossible to deposit more than available balance", async function () {
-    await this.token.connect(this.account1).approve(this.bridge.address, "12")
-    await expect(this.bridge.connect(this.account1).deposit(5)).to.be.revertedWith("ERC20: transfer amount exceeds balance")
+    await expect(this.bridge.outboundTransfer(this.l2holder.address, 13)).to.be.revertedWith("ERC20: transfer amount exceeds allowance")
   })
 
   describe("after token deposited(first holder)", function () {
     beforeEach(async function () {
       await this.token.approve(this.bridge.address, parseEther("500000"))
-      expect(await this.bridge.deposit(parseEther("500000")), true)
+      await this.bridge.outboundTransfer(this.l2holder.address, parseEther("500000"))
     })
 
     it("token balance is correct", async function () {
@@ -86,7 +82,7 @@ describe("L1 Bridge", function () {
       beforeEach(async function () {
         await this.token.transfer(this.account1.address, parseEther("500000"))
         await this.token.connect(this.account1).approve(this.bridge.address, parseEther("500000"))
-        expect(await this.bridge.connect(this.account1).deposit(parseEther("500000")), true)
+        await this.bridge.connect(this.account1).outboundTransfer(this.l2holder.address, parseEther("500000"))
       })
       it("token balance is correct", async function () {
         const depositBalance = await this.token.balanceOf(this.bridge.address)
