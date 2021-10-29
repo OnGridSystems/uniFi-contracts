@@ -52,7 +52,7 @@ describe("UniFiStake", function () {
     expect(stakedTokens).to.equal(this.alice_deposit.sub(this.alice_deposit.mul("50").div("10000")))
   })
 
-  it("reward logic // logs above", async function () {
+  it("reward logic", async function () {
     twoSign = this.signers[3]
     threeSign = this.signers[4]
     fourSign = this.signers[5]
@@ -74,7 +74,6 @@ describe("UniFiStake", function () {
     await this.pool.connect(fourSign).deposit(four_deposit)
 
     total_tokens = two_deposit.add(three_deposit).add(four_deposit).add(this.alice_deposit)
-    console.log(total_tokens.toString())
     total_reward = BigNumber.from("100")
     await this.rewardToken.approve(this.pool.address, total_reward)
     await this.pool.addContractBalance(total_reward)
@@ -88,16 +87,6 @@ describe("UniFiStake", function () {
     two_reward = await this.rewardToken.balanceOf(twoSign.address)
     three_reward = await this.rewardToken.balanceOf(threeSign.address)
     four_reward = await this.rewardToken.balanceOf(fourSign.address)
-
-    console.log("total number of reward tokens", total_reward.toString())
-    console.log("total number of award tokens issued", two_reward.add(three_reward).add(four_reward).add(alice_reward).toString())
-    console.log("one_reward", two_reward.toString())
-    console.log("two_reward", three_reward.toString())
-    console.log("alice_reward", alice_reward.toString())
-    console.log("three_reward", four_reward.toString())
-    console.log(
-      "approximately the percentage of the deposit from the total number of invested tokens\nis the percentage of reward tokens that the user will receive"
-    )
 
     expect(this.alice_deposit.mul(total_reward).div(total_tokens).sub("1")).to.equal(alice_reward) // 1 is lost during calculations reward
     expect(two_deposit.mul(total_reward).div(total_tokens).sub("1")).to.equal(two_reward) // 1 is lost during calculations reward
