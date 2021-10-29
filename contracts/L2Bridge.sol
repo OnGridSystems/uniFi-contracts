@@ -22,6 +22,7 @@ interface IERC20Bridged is IERC20 {
  * - upon `outboundTransfer` call from token holder it withdraws and burns L2 the requested token
  * @author DAO1
  **/
+
 contract L2Bridge is AccessControl {
     using SafeMath for uint256;
 
