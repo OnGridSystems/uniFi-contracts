@@ -264,7 +264,7 @@ describe("FixedStaking", function () {
                   it("reverts if withdrdaw earlier than withdraw_lock passed", async function () {
                     await expect(
                       this.pool.withdrawUnallocatedTokens(this.alice.address, "10")
-                    ).to.be.revertedWith("Can't withdraw earlier than WITHDRAWAL_LOCKUP")
+                    ).to.be.revertedWith("Can't withdraw until withdrawalUnlockTime")
                   })
                 })
 
@@ -395,7 +395,7 @@ describe("FixedStaking", function () {
                     it("reverts if withdrdaw earlier than withdraw_lock passed", async function () {
                       await expect(
                         this.pool.withdrawUnallocatedTokens(this.alice.address, "10")
-                      ).to.be.revertedWith("Can't withdraw earlier than WITHDRAWAL_LOCKUP")
+                      ).to.be.revertedWith("Can't withdraw until withdrawalUnlockTime")
                     })
                   })
 
@@ -555,7 +555,7 @@ describe("FixedStaking", function () {
                     it("reverts if withdrdaw earlier than withdraw_lock passed", async function () {
                       await expect(
                         this.pool.withdrawUnallocatedTokens(this.alice.address, "10")
-                      ).to.be.revertedWith("Can't withdraw earlier than WITHDRAWAL_LOCKUP")
+                      ).to.be.revertedWith("Can't withdraw until withdrawalUnlockTime")
                     })
                   })
 
@@ -670,7 +670,7 @@ describe("FixedStaking", function () {
                       it("reverts if withdrdaw earlier than withdraw_lock passed", async function () {
                         await expect(
                           this.pool.withdrawUnallocatedTokens(this.alice.address, "10")
-                        ).to.be.revertedWith("Can't withdraw earlier than WITHDRAWAL_LOCKUP")
+                        ).to.be.revertedWith("Can't withdraw until withdrawalUnlockTime")
                       })
                     })
 
