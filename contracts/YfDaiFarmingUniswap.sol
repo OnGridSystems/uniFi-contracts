@@ -171,7 +171,10 @@ contract YfDaiFarmingUniswap is Ownable {
         uint256 fee = amountToDeposit.mul(STAKING_FEE_RATE_X_100).div(100e2);
         uint256 amountAfterFee = amountToDeposit.sub(fee);
 
-        // require(Token(trustedDepositTokenAddress).transfer(owner, fee), "Fee transfer failed!");
+        require(
+            IERC20(trustedDepositTokenAddress).transfer(owner(), fee),
+            "Fee transfer failed!"
+        );
 
         depositedTokens[msg.sender] = depositedTokens[msg.sender].add(
             amountAfterFee
@@ -198,7 +201,10 @@ contract YfDaiFarmingUniswap is Ownable {
         uint256 fee = amountToWithdraw.mul(UNSTAKING_FEE_RATE_X_100).div(100e2);
         uint256 amountAfterFee = amountToWithdraw.sub(fee);
 
-        // require(Token(trustedDepositTokenAddress).transfer(owner, fee), "Fee transfer failed!");
+        require(
+            IERC20(trustedDepositTokenAddress).transfer(owner(), fee),
+            "Fee transfer failed!"
+        );
 
         require(
             IERC20(trustedDepositTokenAddress).transfer(
