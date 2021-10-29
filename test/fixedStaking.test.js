@@ -18,7 +18,7 @@ describe("FixedStaking", function () {
     beforeEach(async function () {
       this.pool = await this.contract.deploy(this.token.address, 30, 155, 155)
       await this.pool.deployed()
-      await this.pool.setCurrentTime(1700000000)
+      await this.pool.setCurrentTime(0)
     })
 
     it("initial states", async function () {
@@ -45,11 +45,10 @@ describe("FixedStaking", function () {
       })
 
       it("her stake is visible", async function () {
-        expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
         expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
         expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("10000")
-        expect((await this.pool.getStake(this.alice.address, 0)).startTime).to.equal(1700000000)
-        expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(BigNumber.from("1700000000").add(days.mul("30")))
+        expect((await this.pool.getStake(this.alice.address, 0)).startTime).to.equal(0)
+        expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("30"))
         expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal(reward)
         expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
         expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(
@@ -58,183 +57,481 @@ describe("FixedStaking", function () {
         expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal("0")
       })
 
-      // it("second stake of Alice", async function () {
-      //   amount = BigNumber.from((1e18).toString())
-      //   reward = amount.mul("155").div("10000")
-      //   await this.pool.stake(amount)
-      //   await this.pool.increaseCurrentTime(days.mul("15"))
-
-      //   expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
-      //   expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(true)
-      //   expect((await this.pool.getStake(this.alice.address, 1)).stakedAmount).to.equal(amount)
-      //   expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
-      //   expect((await this.pool.getStake(this.alice.address, 1)).totalYield).to.equal(reward)
-
-      //   activeStake=await this.pool.activeStake(this.alice.address)
-      //   expect(activeStake[0]).to.equal(true)
-      //   expect(activeStake[1]).to.equal(true)
-
-      //   expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(
-      //     BigNumber.from(amount).mul("155").div("10000").div("2")
-      //   )
-      //   await this.pool.harvest(1)
-      //   expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal(reward.div("2"))
-      //   expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(BigNumber.from("1700000000").add(days.mul("15")))
-      // })
-
-      describe("15 days (half) passed", function () {
+      describe("second stake of Alice", function () {
         beforeEach(async function () {
-          await this.pool.increaseCurrentTime(days.mul("15"))
+          await this.pool.stake(20000)
+          secondReward = BigNumber.from("20000").mul("155").div("10000")
         })
 
-        describe("earlyUnstake", function () {
-          beforeEach(async function () {
-            await this.pool.unstake(0)
-          })
-          describe("function withdrawalPenalties", function () {
-            it("not possible when amount is greater than the penalties", async function () {
-              await expect(this.pool.withdrawalPenalties(this.alice.address, reward)).to.be.revertedWith(
-                "Amount is more than there are penalties"
-              )
-            })
-
-            it("contract state", async function () {
-              await this.pool.withdrawalPenalties(this.alice.address, reward.div("2").sub("1"))
-              expect(await this.pool.penalties()).to.equal(reward.sub(reward.div("2").sub("1")))
-            })
-          })
-
-          it("contract states", async function () {
-            expect(await this.pool.totalStaked()).to.equal("0")
-            expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
-            expect(await this.pool.penalties()).to.equal(reward)
-          })
-
-          it("her stake is visible", async function () {
-            expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
-            expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(false)
-            expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(BigNumber.from("1700000000").add(days.mul("15")))
-            expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal(reward.div("2"))
-            expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
-            expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(
-              (await this.pool.getStake(this.alice.address, 0)).startTime
-            )
-            expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward.div("2"))
-          })
-
-          it("harvest", async function () {
-            expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward.div("2"))
-            await this.pool.harvest(0)
-            //it is possible to check Alice's balance when the DAO 1 token is connected
-            expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal(reward.div("2"))
-            expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(BigNumber.from("1700000000").add(days.mul("15")))
-            expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal("0")
-          })
+        it("contract states", async function () {
+          expect(await this.pool.totalStaked()).to.equal("30000")
+          expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
         })
 
         it("her stake is visible", async function () {
-          expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
-          expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
-          expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("10000")
-          expect((await this.pool.getStake(this.alice.address, 0)).startTime).to.equal(1700000000)
-          expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(BigNumber.from("1700000000").add(days.mul("30")))
-          expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal(reward)
-          expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
-          expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(
-            (await this.pool.getStake(this.alice.address, 0)).startTime
+          expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(true)
+          expect((await this.pool.getStake(this.alice.address, 1)).stakedAmount).to.equal("20000")
+          expect((await this.pool.getStake(this.alice.address, 1)).startTime).to.equal("0")
+          expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("30"))
+          expect((await this.pool.getStake(this.alice.address, 1)).totalYield).to.equal(secondReward)
+          expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
+          expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(
+            (await this.pool.getStake(this.alice.address, 1)).startTime
           )
-          expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward.div("2"))
+          expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal("0")
         })
 
-        it("harvest", async function () {
-          await this.pool.harvest(0)
-          //it is possible to check Alice's balance when the DAO 1 token is connected
-          expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal(reward.div("2"))
-          expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(BigNumber.from("1700000000").add(days.mul("15")))
-        })
-
-        describe("+ 15 days (entire interval) passed", function () {
+        describe("15 days (half) passed", function () {
           beforeEach(async function () {
             await this.pool.increaseCurrentTime(days.mul("15"))
           })
 
-          it("her stake is visible", async function () {
-            expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
+          it("her stake is correct", async function () {
             expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
             expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("10000")
-            expect((await this.pool.getStake(this.alice.address, 0)).startTime).to.equal(1700000000)
-            expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(BigNumber.from("1700000000").add(days.mul("30")))
+            expect((await this.pool.getStake(this.alice.address, 0)).startTime).to.equal("0")
+            expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("30"))
             expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal(reward)
             expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
             expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(
               (await this.pool.getStake(this.alice.address, 0)).startTime
             )
-            expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward)
+            expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward.div(2))
+
+            expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(true)
+            expect((await this.pool.getStake(this.alice.address, 1)).stakedAmount).to.equal("20000")
+            expect((await this.pool.getStake(this.alice.address, 1)).startTime).to.equal("0")
+            expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("30"))
+            expect((await this.pool.getStake(this.alice.address, 1)).totalYield).to.equal(secondReward)
+            expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
+            expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(
+              (await this.pool.getStake(this.alice.address, 1)).startTime
+            )
+            expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(secondReward.div("2"))
           })
 
-          it("harvest", async function () {
-            await this.pool.harvest(0)
-            //it is possible to check Alice's balance when the DAO 1 token is connected
-            expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal(reward)
-            expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(BigNumber.from("1700000000").add(days.mul("30")))
-          })
-
-          describe("+ 1 day passed (all expired))", function () {
+          describe("early unstake first deposit", function () {
             beforeEach(async function () {
-              await this.pool.increaseCurrentTime(days.mul("1"))
+              await this.pool.unstake(0)
             })
 
-            it("her stake is visible", async function () {
-              expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
+            it("contract states", async function () {
+              expect(await this.pool.totalStaked()).to.equal("20000")
+              expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
+              expect(await this.pool.penalties()).to.equal(reward)
+            })
+
+            it("her stake is correct", async function () {
+              // it is possible to check Alice's balance when the DAO 1 token is connected
+              expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(false)
+              expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("15"))
+              expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal(reward.div("2"))
+              expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
+              expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(
+                (await this.pool.getStake(this.alice.address, 0)).startTime
+              )
+              expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward.div("2"))
+            })
+
+            it("can't second time unstake position", async function () {
+              await expect(this.pool.unstake(0)).to.be.revertedWith("Stake is not active!")
+            })
+
+            describe("function withdrawalPenalties", function () {
+              it("not possible when amount is greater than the penalties", async function () {
+                await expect(this.pool.withdrawalPenalties(this.alice.address, 1000)).to.be.revertedWith(
+                  "Amount is more than there are penalties"
+                )
+              })
+
+              it("withdrawalPenalties", async function () {
+                await this.pool.withdrawalPenalties(this.alice.address, reward.div("2").sub("1"))
+                // it is possible to check Alice's balance when the DAO 1 token is connected
+                expect(await this.pool.penalties()).to.equal(reward.sub(reward.div("2").sub("1")))
+              })
+            })
+
+            describe("function harvest", function () {
+              beforeEach(async function () {
+                await this.pool.harvest(0)
+              })
+
+              it("her stake is correct", async function () {
+                // it is possible to check Alice's balance when the DAO 1 token is connected
+                expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(0)
+                expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal(reward.div("2"))
+                expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(days.mul("15"))
+              })
+
+              it("second harvest does not issue extra tokens", async function () {
+                await this.pool.harvest(0)
+                // it is possible to check Alice's balance when the DAO 1 token is connected
+                expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(0)
+                expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal(reward.div("2"))
+                expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(days.mul("15"))
+              })
+            })
+
+            describe("early unstake second deposit after first", function () {
+              beforeEach(async function () {
+                await this.pool.unstake(1)
+              })
+
+              it("contract states", async function () {
+                expect(await this.pool.totalStaked()).to.equal("0")
+                expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
+                expect(await this.pool.penalties()).to.equal(reward.add(secondReward))
+              })
+
+              it("her stake is correct", async function () {
+                // it is possible to check Alice's balance when the DAO 1 token is connected
+                expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(false)
+                expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("15"))
+                expect((await this.pool.getStake(this.alice.address, 1)).totalYield).to.equal(secondReward.div("2"))
+                expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
+                expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(
+                  (await this.pool.getStake(this.alice.address, 1)).startTime
+                )
+                expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(secondReward.div("2"))
+              })
+
+              it("can't second time unstake position", async function () {
+                await expect(this.pool.unstake(1)).to.be.revertedWith("Stake is not active!")
+              })
+
+              describe("function withdrawalPenalties", function () {
+                it("not possible when amount is greater than the penalties", async function () {
+                  await expect(this.pool.withdrawalPenalties(this.alice.address, 1000)).to.be.revertedWith(
+                    "Amount is more than there are penalties"
+                  )
+                })
+
+                it("withdrawalPenalties", async function () {
+                  await this.pool.withdrawalPenalties(this.alice.address, secondReward.div("2").sub("1"))
+                  // it is possible to check Alice's balance when the DAO 1 token is connected
+                  expect(await this.pool.penalties()).to.equal(secondReward.add(reward).sub(secondReward.div("2").sub("1")))
+                })
+              })
+
+              describe("function harvest", function () {
+                beforeEach(async function () {
+                  await this.pool.harvest(1)
+                })
+
+                it("her stake is correct", async function () {
+                  // it is possible to check Alice's balance when the DAO 1 token is connected
+                  expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(0)
+                  expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal(secondReward.div("2"))
+                  expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(days.mul("15"))
+                })
+
+                it("second harvest does not issue extra tokens", async function () {
+                  await this.pool.harvest(1)
+                  // it is possible to check Alice's balance when the DAO 1 token is connected
+                  expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(0)
+                  expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal(secondReward.div("2"))
+                  expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(days.mul("15"))
+                })
+              })
+            })
+          })
+
+          describe("+ 15 days (entire interval) passed", function () {
+            beforeEach(async function () {
+              await this.pool.increaseCurrentTime(days.mul("15"))
+            })
+
+            it("her stake is correct", async function () {
               expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
               expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("10000")
-              expect((await this.pool.getStake(this.alice.address, 0)).startTime).to.equal(1700000000)
-              expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(BigNumber.from("1700000000").add(days.mul("30")))
+              expect((await this.pool.getStake(this.alice.address, 0)).startTime).to.equal("0")
+              expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("30"))
               expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal(reward)
               expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
               expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(
                 (await this.pool.getStake(this.alice.address, 0)).startTime
               )
               expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward)
-            })
 
-            it("harvest", async function () {
-              await this.pool.harvest(0)
-              //it is possible to check Alice's balance when the DAO 1 token is connected
-              expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal(reward)
-              expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(
-                BigNumber.from("1700000000").add(days.mul("31"))
+              expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(true)
+              expect((await this.pool.getStake(this.alice.address, 1)).stakedAmount).to.equal("20000")
+              expect((await this.pool.getStake(this.alice.address, 1)).startTime).to.equal("0")
+              expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("30"))
+              expect((await this.pool.getStake(this.alice.address, 1)).totalYield).to.equal(secondReward)
+              expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
+              expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(
+                (await this.pool.getStake(this.alice.address, 1)).startTime
               )
+              expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(secondReward)
             })
 
-            describe("unstake", function () {
+            describe("early unstake first deposit", function () {
               beforeEach(async function () {
                 await this.pool.unstake(0)
               })
 
               it("contract states", async function () {
-                expect(await this.pool.totalStaked()).to.equal("0")
-                expect(await this.pool.getStakesLength(this.alice.address)).to.equal("1")
+                expect(await this.pool.totalStaked()).to.equal("20000")
+                expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
+                expect(await this.pool.penalties()).to.equal(reward)
               })
-              it("can't second time unstacke position", async function () {
+
+              it("her stake is correct", async function () {
+                // it is possible to check Alice's balance when the DAO 1 token is connected
+                expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(false)
+                expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("30"))
+                expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal(reward)
+                expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
+                expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(
+                  (await this.pool.getStake(this.alice.address, 0)).startTime
+                )
+                expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward)
+              })
+
+              it("can't second time unstake position", async function () {
                 await expect(this.pool.unstake(0)).to.be.revertedWith("Stake is not active!")
+              })
+
+              describe("function withdrawalPenalties", function () {
+                it("not possible when amount is greater than the penalties", async function () {
+                  await expect(this.pool.withdrawalPenalties(this.alice.address, 1000)).to.be.revertedWith(
+                    "Amount is more than there are penalties"
+                  )
+                })
+
+                it("withdrawalPenalties", async function () {
+                  await this.pool.withdrawalPenalties(this.alice.address, reward.div("2").sub("1"))
+                  // it is possible to check Alice's balance when the DAO 1 token is connected
+                  expect(await this.pool.penalties()).to.equal(reward.sub(reward.div("2").sub("1")))
+                })
+              })
+
+              describe("function harvest", function () {
+                beforeEach(async function () {
+                  await this.pool.harvest(0)
+                })
+
+                it("her stake is correct", async function () {
+                  // it is possible to check Alice's balance when the DAO 1 token is connected
+                  expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(0)
+                  expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal(reward)
+                  expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(days.mul("30"))
+                })
+
+                it("second harvest does not issue extra tokens", async function () {
+                  await this.pool.harvest(0)
+                  // it is possible to check Alice's balance when the DAO 1 token is connected
+                  expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(0)
+                  expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal(reward)
+                  expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(days.mul("30"))
+                })
+              })
+
+              describe("early unstake second deposit after first", function () {
+                beforeEach(async function () {
+                  await this.pool.unstake(1)
+                })
+
+                it("contract states", async function () {
+                  expect(await this.pool.totalStaked()).to.equal("0")
+                  expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
+                  expect(await this.pool.penalties()).to.equal(reward.add(secondReward))
+                })
+
+                it("her stake is correct", async function () {
+                  // it is possible to check Alice's balance when the DAO 1 token is connected
+                  expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(false)
+                  expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("30"))
+                  expect((await this.pool.getStake(this.alice.address, 1)).totalYield).to.equal(secondReward)
+                  expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
+                  expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(
+                    (await this.pool.getStake(this.alice.address, 1)).startTime
+                  )
+                  expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(secondReward)
+                })
+
+                it("can't second time unstake position", async function () {
+                  await expect(this.pool.unstake(1)).to.be.revertedWith("Stake is not active!")
+                })
+
+                describe("function withdrawalPenalties", function () {
+                  it("not possible when amount is greater than the penalties", async function () {
+                    await expect(this.pool.withdrawalPenalties(this.alice.address, 1000)).to.be.revertedWith(
+                      "Amount is more than there are penalties"
+                    )
+                  })
+
+                  it("withdrawalPenalties", async function () {
+                    await this.pool.withdrawalPenalties(this.alice.address, secondReward.div("2").sub("1"))
+                    // it is possible to check Alice's balance when the DAO 1 token is connected
+                    expect(await this.pool.penalties()).to.equal(secondReward.add(reward).sub(secondReward.div("2").sub("1")))
+                  })
+                })
+
+                describe("function harvest", function () {
+                  beforeEach(async function () {
+                    await this.pool.harvest(1)
+                  })
+
+                  it("her stake is correct", async function () {
+                    // it is possible to check Alice's balance when the DAO 1 token is connected
+                    expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(0)
+                    expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal(secondReward)
+                    expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(days.mul("30"))
+                  })
+
+                  it("second harvest does not issue extra tokens", async function () {
+                    await this.pool.harvest(1)
+                    // it is possible to check Alice's balance when the DAO 1 token is connected
+                    expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(0)
+                    expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal(secondReward)
+                    expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(days.mul("30"))
+                  })
+                })
+              })
+            })
+            describe("+ 1 day passed (all expired))", function () {
+              beforeEach(async function () {
+                await this.pool.increaseCurrentTime(days.mul("1"))
+              })
+
+              it("her stake is correct", async function () {
+                expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(true)
+                expect((await this.pool.getStake(this.alice.address, 0)).stakedAmount).to.equal("10000")
+                expect((await this.pool.getStake(this.alice.address, 0)).startTime).to.equal("0")
+                expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("30"))
+                expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal(reward)
+                expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
+                expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(
+                  (await this.pool.getStake(this.alice.address, 0)).startTime
+                )
+                expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward)
+
+                expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(true)
+                expect((await this.pool.getStake(this.alice.address, 1)).stakedAmount).to.equal("20000")
+                expect((await this.pool.getStake(this.alice.address, 1)).startTime).to.equal("0")
+                expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("30"))
+                expect((await this.pool.getStake(this.alice.address, 1)).totalYield).to.equal(secondReward)
+                expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
+                expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(
+                  (await this.pool.getStake(this.alice.address, 1)).startTime
+                )
+                expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(secondReward)
+              })
+
+              describe("unstake first deposit", function () {
+                beforeEach(async function () {
+                  await this.pool.unstake(0)
+                })
+
+                it("contract states", async function () {
+                  expect(await this.pool.totalStaked()).to.equal("20000")
+                  expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
+                  expect(await this.pool.penalties()).to.equal("0")
+                })
+
+                it("her stake is correct", async function () {
+                  // it is possible to check Alice's balance when the DAO 1 token is connected
+                  expect((await this.pool.getStake(this.alice.address, 0)).active).to.equal(false)
+                  expect((await this.pool.getStake(this.alice.address, 0)).endTime).to.equal(days.mul("30"))
+                  expect((await this.pool.getStake(this.alice.address, 0)).totalYield).to.equal(reward)
+                  expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal("0")
+                  expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(
+                    (await this.pool.getStake(this.alice.address, 0)).startTime
+                  )
+                  expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(reward)
+                })
+
+                it("can't second time unstake position", async function () {
+                  await expect(this.pool.unstake(0)).to.be.revertedWith("Stake is not active!")
+                })
+
+                describe("function harvest", function () {
+                  beforeEach(async function () {
+                    await this.pool.harvest(0)
+                  })
+
+                  it("her stake is correct", async function () {
+                    // it is possible to check Alice's balance when the DAO 1 token is connected
+                    expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(0)
+                    expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal(reward)
+                    expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(days.mul("31"))
+                  })
+
+                  it("second harvest does not issue extra tokens", async function () {
+                    await this.pool.harvest(0)
+                    // it is possible to check Alice's balance when the DAO 1 token is connected
+                    expect((await this.pool.getStake(this.alice.address, 0)).harvestableYield).to.equal(0)
+                    expect((await this.pool.getStake(this.alice.address, 0)).harvestedYield).to.equal(reward)
+                    expect((await this.pool.getStake(this.alice.address, 0)).lastHarvestTime).to.equal(days.mul("31"))
+                  })
+                })
+
+                describe("unstake second deposit after first", function () {
+                  beforeEach(async function () {
+                    await this.pool.unstake(1)
+                  })
+
+                  it("contract states", async function () {
+                    expect(await this.pool.totalStaked()).to.equal("0")
+                    expect(await this.pool.getStakesLength(this.alice.address)).to.equal("2")
+                    expect(await this.pool.penalties()).to.equal("0")
+                  })
+
+                  it("her stake is correct", async function () {
+                    // it is possible to check Alice's balance when the DAO 1 token is connected
+                    expect((await this.pool.getStake(this.alice.address, 1)).active).to.equal(false)
+                    expect((await this.pool.getStake(this.alice.address, 1)).endTime).to.equal(days.mul("30"))
+                    expect((await this.pool.getStake(this.alice.address, 1)).totalYield).to.equal(secondReward)
+                    expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal("0")
+                    expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(
+                      (await this.pool.getStake(this.alice.address, 1)).startTime
+                    )
+                    expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(secondReward)
+                  })
+
+                  it("can't second time unstake position", async function () {
+                    await expect(this.pool.unstake(1)).to.be.revertedWith("Stake is not active!")
+                  })
+
+                  describe("function harvest", function () {
+                    beforeEach(async function () {
+                      await this.pool.harvest(1)
+                    })
+
+                    it("her stake is correct", async function () {
+                      // it is possible to check Alice's balance when the DAO 1 token is connected
+                      expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(0)
+                      expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal(secondReward)
+                      expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(days.mul("31"))
+                    })
+
+                    it("second harvest does not issue extra tokens", async function () {
+                      await this.pool.harvest(1)
+                      // it is possible to check Alice's balance when the DAO 1 token is connected
+                      expect((await this.pool.getStake(this.alice.address, 1)).harvestableYield).to.equal(0)
+                      expect((await this.pool.getStake(this.alice.address, 1)).harvestedYield).to.equal(secondReward)
+                      expect((await this.pool.getStake(this.alice.address, 1)).lastHarvestTime).to.equal(days.mul("31"))
+                    })
+                  })
+                })
               })
             })
           })
         })
-      })
 
-      describe("then Bob deposited", function () {
-        beforeEach(async function () {
-          await this.pool.connect(this.bob).stake(345)
-        })
+        describe("then Bob deposited", function () {
+          beforeEach(async function () {
+            await this.pool.connect(this.bob).stake(345)
+          })
 
-        it("his stake is also visible", async function () {
-          expect(await this.pool.getStakesLength(this.bob.address)).to.equal("1")
-          expect((await this.pool.getStake(this.bob.address, 0)).active).to.equal(true)
-          expect((await this.pool.getStake(this.bob.address, 0)).stakedAmount).to.equal("345")
-          expect((await this.pool.getStake(this.bob.address, 0)).harvestedYield).to.equal("0")
-          expect((await this.pool.getStake(this.bob.address, 0)).totalYield).to.equal(BigNumber.from("345").mul("155").div("10000"))
+          it("his stake is also visible", async function () {
+            expect(await this.pool.getStakesLength(this.bob.address)).to.equal("1")
+            expect((await this.pool.getStake(this.bob.address, 0)).active).to.equal(true)
+            expect((await this.pool.getStake(this.bob.address, 0)).stakedAmount).to.equal("345")
+            expect((await this.pool.getStake(this.bob.address, 0)).harvestedYield).to.equal("0")
+            expect((await this.pool.getStake(this.bob.address, 0)).totalYield).to.equal(BigNumber.from("345").mul("155").div("10000"))
+          })
         })
       })
     })
